@@ -272,32 +272,24 @@ const InvoicePDF = ({ invoice, logoBase64 }: InvoicePDFProps) => {
 
         {/* Terms Section */}
         <View style={styles.termsContainer}>
-          {invoice.invoiceType === 'rental' && (
+          {invoice.invoiceType === 'rental' && invoice.notesText ? (
             <View style={styles.notesSection}>
               <Text style={styles.sectionLabel}>Notes:</Text>
-              <Text style={styles.termsText}>Pick-up or delivery is to be handled by client</Text>
+              {invoice.notesText.split('\n').map((line, i) => (
+                <Text key={i} style={styles.termsText}>{line}</Text>
+              ))}
             </View>
-          )}
+          ) : null}
           
           <View>
             <Text style={styles.sectionLabel}>Terms:</Text>
-            {invoice.invoiceType === 'production' ? (
-              <>
-                <Text style={styles.termsText}>A minimum of 80% upfront payment is required to book production timeline.</Text>
-                <Text style={styles.termsText}>Balance is to be paid upon notification of completion ( not later than forty eight (48) hours. Pick-up or delivery is to be handled by client.</Text>
-                <Text style={[styles.termsText, { marginTop: 4 }]}>Account details:</Text>
-                <Text style={styles.termsText}>Olayinka Fagbuaro</Text>
-                <Text style={styles.termsText}>Stanbic</Text>
-                <Text style={styles.termsText}>0017208098</Text>
-              </>
-            ) : (
-              <>
-                <Text style={styles.termsText}>100% payment into:</Text>
-                <Text style={styles.termsText}>Oluyemi Olayinka Fagbuaro</Text>
-                <Text style={styles.termsText}>0017208098</Text>
-                <Text style={styles.termsText}>Stanbic Ibtc Bank</Text>
-              </>
-            )}
+            {invoice.termsText.split('\n').map((line, i) => (
+              <Text key={i} style={styles.termsText}>{line}</Text>
+            ))}
+            <Text style={[styles.termsText, { marginTop: 4 }]}>Account details:</Text>
+            <Text style={styles.termsText}>{invoice.accountName}</Text>
+            <Text style={styles.termsText}>{invoice.bankName}</Text>
+            <Text style={styles.termsText}>{invoice.accountNumber}</Text>
           </View>
         </View>
       </Page>

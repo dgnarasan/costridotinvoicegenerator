@@ -37,7 +37,34 @@ export const getDefaultPaymentTerms = (type: InvoiceType): string => {
   return type === 'production' ? 'Minimum of 80%' : '100%';
 };
 
+const getDefaultTerms = (type: InvoiceType): string => {
+  return type === 'production'
+    ? 'A minimum of 80% upfront payment is required to book production timeline.\nBalance is to be paid upon notification of completion ( not later than forty eight (48) hours. Pick-up or delivery is to be handled by client.'
+    : '100% payment into:';
+};
+
+const getDefaultNotes = (type: InvoiceType): string => {
+  return type === 'rental' ? 'Pick-up or delivery is to be handled by client' : '';
+};
+
+const getDefaultAccountName = (type: InvoiceType): string => {
+  return type === 'production' ? 'Olayinka Fagbuaro' : 'Oluyemi Olayinka Fagbuaro';
+};
+
+const getDefaultBankName = (type: InvoiceType): string => {
+  return type === 'production' ? 'Stanbic' : 'Stanbic Ibtc Bank';
+};
+
+export const getDefaults = (type: InvoiceType) => ({
+  termsText: getDefaultTerms(type),
+  notesText: getDefaultNotes(type),
+  accountName: getDefaultAccountName(type),
+  bankName: getDefaultBankName(type),
+  accountNumber: '0017208098',
+});
+
 export const createNewInvoice = (type: InvoiceType = 'production'): Invoice => {
+  const defaults = getDefaults(type);
   return {
     id: crypto.randomUUID(),
     invoiceNumber: generateInvoiceNumber(),
@@ -51,6 +78,7 @@ export const createNewInvoice = (type: InvoiceType = 'production'): Invoice => {
     ],
     taxRate: 0,
     depositReceived: 0,
+    ...defaults,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };

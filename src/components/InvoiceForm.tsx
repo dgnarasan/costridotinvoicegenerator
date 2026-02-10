@@ -1,5 +1,6 @@
 import { Invoice, LineItem, InvoiceType } from '@/types/invoice';
-import { getDefaultPaymentTerms, formatCurrency, calculateLineAmount } from '@/utils/invoiceUtils';
+import { getDefaultPaymentTerms, getDefaults, formatCurrency, calculateLineAmount } from '@/utils/invoiceUtils';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,11 +19,13 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
   };
 
   const updateInvoiceType = (type: InvoiceType) => {
+    const defaults = getDefaults(type);
     onChange({
       ...invoice,
       invoiceType: type,
       paymentTerms: getDefaultPaymentTerms(type),
       depositReceived: type === 'rental' ? invoice.depositReceived : 0,
+      ...defaults,
     });
   };
 
@@ -244,6 +247,61 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
               />
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Terms & Account Details */}
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Terms & Account Details</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {invoice.invoiceType === 'rental' && (
+            <div>
+              <Label htmlFor="notesText">Notes</Label>
+              <Textarea
+                id="notesText"
+                value={invoice.notesText}
+                onChange={(e) => updateField('notesText', e.target.value)}
+                rows={2}
+              />
+            </div>
+          )}
+          <div>
+            <Label htmlFor="termsText">Terms</Label>
+            <Textarea
+              id="termsText"
+              value={invoice.termsText}
+              onChange={(e) => updateField('termsText', e.target.value)}
+              rows={3}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="accountName">Account Name</Label>
+              <Input
+                id="accountName"
+                value={invoice.accountName}
+                onChange={(e) => updateField('accountName', e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="bankName">Bank Name</Label>
+              <Input
+                id="bankName"
+                value={invoice.bankName}
+                onChange={(e) => updateField('bankName', e.target.value)}
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="accountNumber">Account Number</Label>
+            <Input
+              id="accountNumber"
+              value={invoice.accountNumber}
+              onChange={(e) => updateField('accountNumber', e.target.value)}
+            />
+          </div>
         </CardContent>
       </Card>
     </div>
