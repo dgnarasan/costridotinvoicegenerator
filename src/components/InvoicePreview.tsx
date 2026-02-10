@@ -202,32 +202,24 @@ const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
 
         {/* Terms Section */}
         <div style={{ fontSize: '11px', color: '#666', lineHeight: '1.6' }}>
-          {invoice.invoiceType === 'rental' && (
+          {invoice.invoiceType === 'rental' && invoice.notesText && (
             <div style={{ marginBottom: '16px' }}>
               <p style={{ fontWeight: 600, marginBottom: '4px', color: '#666' }}>Notes:</p>
-              <p>Pick-up or delivery is to be handled by client</p>
+              {invoice.notesText.split('\n').map((line, i) => (
+                <p key={i}>{line}</p>
+              ))}
             </div>
           )}
           
           <div>
             <p style={{ fontWeight: 600, marginBottom: '4px', color: '#666' }}>Terms:</p>
-            {invoice.invoiceType === 'production' ? (
-              <div>
-                <p>A minimum of 80% upfront payment is required to book production timeline.</p>
-                <p>Balance is to be paid upon notification of completion ( not later than forty eight (48) hours. Pick-up or delivery is to be handled by client.</p>
-                <p style={{ marginTop: '4px' }}>Account details:</p>
-                <p>Olayinka Fagbuaro</p>
-                <p>Stanbic</p>
-                <p>0017208098</p>
-              </div>
-            ) : (
-              <div>
-                <p>100% payment into:</p>
-                <p>Oluyemi Olayinka Fagbuaro</p>
-                <p>0017208098</p>
-                <p>Stanbic Ibtc Bank</p>
-              </div>
-            )}
+            {invoice.termsText.split('\n').map((line, i) => (
+              <p key={i}>{line}</p>
+            ))}
+            <p style={{ marginTop: '4px' }}>Account details:</p>
+            <p>{invoice.accountName}</p>
+            <p>{invoice.bankName}</p>
+            <p>{invoice.accountNumber}</p>
           </div>
         </div>
       </div>
