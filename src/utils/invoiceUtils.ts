@@ -47,20 +47,12 @@ const getDefaultNotes = (type: InvoiceType): string => {
   return type === 'rental' ? 'Pick-up or delivery is to be handled by client' : '';
 };
 
-const getDefaultAccountName = (type: InvoiceType): string => {
-  return type === 'production' ? 'Olayinka Fagbuaro' : 'Oluyemi Olayinka Fagbuaro';
-};
-
-const getDefaultBankName = (type: InvoiceType): string => {
-  return type === 'production' ? 'Stanbic' : 'Stanbic Ibtc Bank';
-};
-
 export const getDefaults = (type: InvoiceType) => ({
   termsText: getDefaultTerms(type),
   notesText: getDefaultNotes(type),
-  accountName: getDefaultAccountName(type),
-  bankName: getDefaultBankName(type),
-  accountNumber: '0017208098',
+  accountName: 'Costridot International',
+  bankName: 'Kuda Bank',
+  accountNumber: '3003475464',
 });
 
 export const createNewInvoice = (type: InvoiceType = 'production'): Invoice => {
