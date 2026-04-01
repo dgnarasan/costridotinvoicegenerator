@@ -180,6 +180,12 @@ const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
               <span style={{ color: '#666' }}>Tax ({invoice.taxRate}%):</span>
               <span style={{ color: '#333' }}>{formatCurrency(calculations.taxAmount)}</span>
             </div>
+            {invoice.cautionFee > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '8px' }}>
+                <span style={{ color: '#666' }}>Caution Fee:</span>
+                <span style={{ color: '#333' }}>{formatCurrency(invoice.cautionFee)}</span>
+              </div>
+            )}
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 

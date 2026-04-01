@@ -17,7 +17,8 @@ export const calculateInvoice = (invoice: Invoice): InvoiceCalculations => {
     0
   );
   const taxAmount = subtotal * (invoice.taxRate / 100);
-  const total = subtotal + taxAmount;
+  const cautionFee = invoice.cautionFee || 0;
+  const total = subtotal + taxAmount + cautionFee;
   const balanceDue = invoice.invoiceType === 'rental' 
     ? total - invoice.depositReceived 
     : total;
