@@ -69,6 +69,7 @@ export const createNewInvoice = (type: InvoiceType = 'production'): Invoice => {
       { id: crypto.randomUUID(), description: '', quantity: 1, rate: 0 },
     ],
     taxRate: 0,
+    cautionFee: 0,
     depositReceived: 0,
     ...defaults,
     createdAt: new Date().toISOString(),
