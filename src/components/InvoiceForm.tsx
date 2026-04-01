@@ -235,7 +235,17 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
             />
           </div>
 
-          {invoice.invoiceType === 'rental' && (
+          <div>
+            <Label htmlFor="cautionFee">Caution Fee (NGN)</Label>
+            <Input
+              id="cautionFee"
+              type="number"
+              min="0"
+              value={invoice.cautionFee}
+              onChange={(e) => updateField('cautionFee', parseFloat(e.target.value) || 0)}
+            />
+          </div>
+
             <div>
               <Label htmlFor="depositReceived">Deposit Received (NGN)</Label>
               <Input
