@@ -246,6 +246,7 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
             />
           </div>
 
+          {invoice.invoiceType === 'rental' && (
             <div>
               <Label htmlFor="depositReceived">Deposit Received (NGN)</Label>
               <Input
