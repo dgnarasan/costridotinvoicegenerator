@@ -256,7 +256,6 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
               onChange={(e) => updateField('depositReceived', parseFloat(e.target.value) || 0)}
             />
           </div>
-          )}
         </CardContent>
       </Card>
 

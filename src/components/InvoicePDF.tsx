@@ -267,7 +267,7 @@ const InvoicePDF = ({ invoice, logoBase64 }: InvoicePDFProps) => {
               <Text style={styles.totalLabel}>Total:</Text>
               <Text style={styles.totalValueBold}>{formatCurrency(calculations.total)}</Text>
             </View>
-            {invoice.invoiceType === 'rental' && (
+            {invoice.depositReceived > 0 && (
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Deposit received:</Text>
                 <Text style={styles.totalValue}>{formatCurrency(invoice.depositReceived)}</Text>
