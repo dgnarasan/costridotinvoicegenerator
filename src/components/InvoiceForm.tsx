@@ -24,7 +24,7 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
       ...invoice,
       invoiceType: type,
       paymentTerms: getDefaultPaymentTerms(type),
-      depositReceived: type === 'rental' ? invoice.depositReceived : 0,
+      depositReceived: invoice.depositReceived,
       ...defaults,
     });
   };
@@ -246,17 +246,16 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
             />
           </div>
 
-          {invoice.invoiceType === 'rental' && (
-            <div>
-              <Label htmlFor="depositReceived">Deposit Received (NGN)</Label>
-              <Input
-                id="depositReceived"
-                type="number"
-                min="0"
-                value={invoice.depositReceived}
-                onChange={(e) => updateField('depositReceived', parseFloat(e.target.value) || 0)}
-              />
-            </div>
+          <div>
+            <Label htmlFor="depositReceived">Deposit Received (NGN)</Label>
+            <Input
+              id="depositReceived"
+              type="number"
+              min="0"
+              value={invoice.depositReceived}
+              onChange={(e) => updateField('depositReceived', parseFloat(e.target.value) || 0)}
+            />
+          </div>
           )}
         </CardContent>
       </Card>
