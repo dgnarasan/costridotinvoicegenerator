@@ -197,7 +197,7 @@ const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
               <span style={{ color: '#666' }}>Total:</span>
               <span style={{ color: '#333', fontWeight: 500 }}>{formatCurrency(calculations.total)}</span>
             </div>
-            {invoice.invoiceType === 'rental' && (
+            {invoice.depositReceived > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
                 <span style={{ color: '#666' }}>Deposit received:</span>
                 <span style={{ color: '#333' }}>{formatCurrency(invoice.depositReceived)}</span>
