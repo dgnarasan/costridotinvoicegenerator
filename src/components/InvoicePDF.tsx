@@ -253,10 +253,6 @@ const InvoicePDF = ({ invoice, logoBase64 }: InvoicePDFProps) => {
               <Text style={styles.totalLabel}>Subtotal:</Text>
               <Text style={styles.totalValue}>{formatCurrency(calculations.subtotal)}</Text>
             </View>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Tax ({invoice.taxRate}%):</Text>
-              <Text style={styles.totalValue}>{formatCurrency(calculations.taxAmount)}</Text>
-            </View>
             {invoice.cautionFee > 0 && (
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Caution Fee:</Text>
@@ -264,7 +260,7 @@ const InvoicePDF = ({ invoice, logoBase64 }: InvoicePDFProps) => {
               </View>
             )}
             <View style={styles.totalRowBorder}>
-              <Text style={styles.totalLabel}>Total:</Text>
+              <Text style={styles.totalLabel}>Total (inclusive of VAT):</Text>
               <Text style={styles.totalValueBold}>{formatCurrency(calculations.total)}</Text>
             </View>
             {invoice.depositReceived > 0 && (

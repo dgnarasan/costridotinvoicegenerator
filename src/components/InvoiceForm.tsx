@@ -223,17 +223,6 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
           <CardTitle className="text-lg">Totals</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="taxRate">Tax Rate (%)</Label>
-            <Input
-              id="taxRate"
-              type="number"
-              min="0"
-              max="100"
-              value={invoice.taxRate}
-              onChange={(e) => updateField('taxRate', parseFloat(e.target.value) || 0)}
-            />
-          </div>
 
           <div>
             <Label htmlFor="cautionFee">Caution Fee (NGN)</Label>
