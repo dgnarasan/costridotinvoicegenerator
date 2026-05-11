@@ -26,6 +26,21 @@ const Index = () => {
   const previewRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
+  // Auto-save invoice whenever it changes (debounced) once it has content
+  useEffect(() => {
+    const hasContent =
+      invoice.billTo.trim() ||
+      invoice.lineItems.some(item => item.description.trim() || item.rate > 0);
+    if (!hasContent) return;
+
+    const timer = setTimeout(() => {
+      saveInvoice(invoice);
+      setHistoryRefreshKey(prev => prev + 1);
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [invoice]);
+
   // Convert logo to base64 for PDF
   useEffect(() => {
     const convertLogoToBase64 = async () => {
