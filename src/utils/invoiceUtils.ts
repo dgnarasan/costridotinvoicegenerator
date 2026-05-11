@@ -18,7 +18,8 @@ export const calculateInvoice = (invoice: Invoice): InvoiceCalculations => {
   );
   const taxAmount = subtotal * (invoice.taxRate / 100);
   const cautionFee = invoice.cautionFee || 0;
-  const total = subtotal + taxAmount + cautionFee;
+  const handlingFee = invoice.handlingFee || 0;
+  const total = subtotal + taxAmount + cautionFee + handlingFee;
   const balanceDue = total - (invoice.depositReceived || 0);
 
   return { subtotal, taxAmount, total, balanceDue };
@@ -69,6 +70,7 @@ export const createNewInvoice = (type: InvoiceType = 'production'): Invoice => {
     ],
     taxRate: 7.5,
     cautionFee: 0,
+    handlingFee: 0,
     depositReceived: 0,
     ...defaults,
     createdAt: new Date().toISOString(),

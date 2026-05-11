@@ -1,12 +1,15 @@
 import { Invoice, LineItem, InvoiceType } from '@/types/invoice';
 import { getDefaultPaymentTerms, getDefaults, formatCurrency, calculateLineAmount } from '@/utils/invoiceUtils';
+import { parseSmartInput } from '@/utils/smartParser';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Wand2 } from 'lucide-react';
 
 interface InvoiceFormProps {
   invoice: Invoice;
@@ -14,6 +17,30 @@ interface InvoiceFormProps {
 }
 
 const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
+  const [smartText, setSmartText] = useState('');
+  const { toast } = useToast();
+
+  const handleSmartFill = () => {
+    const parsed = parseSmartInput(smartText);
+    if (!parsed.billTo && parsed.lineItems.length === 0) {
+      toast({
+        title: 'Nothing to parse',
+        description: 'Add some text first.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    onChange({
+      ...invoice,
+      billTo: parsed.billTo || invoice.billTo,
+      lineItems: parsed.lineItems.length > 0 ? parsed.lineItems : invoice.lineItems,
+    });
+    toast({
+      title: 'Invoice auto-filled',
+      description: `Parsed ${parsed.lineItems.length} line item(s).`,
+    });
+  };
+
   const updateField = <K extends keyof Invoice>(field: K, value: Invoice[K]) => {
     onChange({ ...invoice, [field]: value });
   };
@@ -54,6 +81,31 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
 
   return (
     <div className="space-y-6">
+      {/* Smart Input */}
+      <Card className="border-primary/40">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Wand2 className="h-4 w-4" />
+            Smart Input
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Paste plain text — first line is the customer, then list items. Examples: "40pc x30k", "10 x 5,000", "2 @ 1.5m". "Plus VAT" lines are ignored.
+          </p>
+          <Textarea
+            value={smartText}
+            onChange={(e) => setSmartText(e.target.value)}
+            rows={6}
+            placeholder={'First Baptist Church\n\nChoir robes\n40pc x30k\n\nPlus VAT'}
+          />
+          <Button onClick={handleSmartFill} className="w-full">
+            <Wand2 className="h-4 w-4 mr-2" />
+            Auto-fill from text
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Invoice Meta */}
       <Card>
         <CardHeader className="pb-4">
@@ -232,6 +284,17 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
               min="0"
               value={invoice.cautionFee}
               onChange={(e) => updateField('cautionFee', parseFloat(e.target.value) || 0)}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="handlingFee">Handling Fee (NGN)</Label>
+            <Input
+              id="handlingFee"
+              type="number"
+              min="0"
+              value={invoice.handlingFee}
+              onChange={(e) => updateField('handlingFee', parseFloat(e.target.value) || 0)}
             />
           </div>
 

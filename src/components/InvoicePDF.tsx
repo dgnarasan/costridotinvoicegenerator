@@ -259,8 +259,14 @@ const InvoicePDF = ({ invoice, logoBase64 }: InvoicePDFProps) => {
                 <Text style={styles.totalValue}>{formatCurrency(invoice.cautionFee)}</Text>
               </View>
             )}
+            {invoice.handlingFee > 0 && (
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Handling Fee:</Text>
+                <Text style={styles.totalValue}>{formatCurrency(invoice.handlingFee)}</Text>
+              </View>
+            )}
             <View style={styles.totalRowBorder}>
-              <Text style={styles.totalLabel}>Total (inclusive of VAT):</Text>
+              <Text style={styles.totalLabel}>Total (inclusive of 7.5% VAT):</Text>
               <Text style={styles.totalValueBold}>{formatCurrency(calculations.total)}</Text>
             </View>
             {invoice.depositReceived > 0 && (
