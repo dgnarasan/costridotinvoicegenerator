@@ -182,6 +182,12 @@ const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
                 <span style={{ color: '#333' }}>{formatCurrency(invoice.cautionFee)}</span>
               </div>
             )}
+            {invoice.handlingFee > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '8px' }}>
+                <span style={{ color: '#666' }}>Handling Fee:</span>
+                <span style={{ color: '#333' }}>{formatCurrency(invoice.handlingFee)}</span>
+              </div>
+            )}
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
@@ -190,7 +196,7 @@ const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
               borderTop: '1px solid #ddd',
               marginBottom: '8px'
             }}>
-              <span style={{ color: '#666' }}>Total (inclusive of VAT):</span>
+              <span style={{ color: '#666' }}>Total (inclusive of 7.5% VAT):</span>
               <span style={{ color: '#333', fontWeight: 500 }}>{formatCurrency(calculations.total)}</span>
             </div>
             {invoice.depositReceived > 0 && (

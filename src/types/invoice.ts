@@ -18,6 +18,7 @@ export interface Invoice {
   lineItems: LineItem[];
   taxRate: number;
   cautionFee: number;
+  handlingFee: number;
   depositReceived: number;
   // Editable terms & account details
   termsText: string;
