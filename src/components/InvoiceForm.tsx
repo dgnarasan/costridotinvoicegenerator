@@ -30,14 +30,24 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
       });
       return;
     }
+    const nextType = parsed.invoiceType || invoice.invoiceType;
+    const typeChanged = nextType !== invoice.invoiceType;
+    const typeDefaults = typeChanged ? getDefaults(nextType) : {};
     onChange({
       ...invoice,
+      invoiceType: nextType,
+      paymentTerms: typeChanged ? getDefaultPaymentTerms(nextType) : invoice.paymentTerms,
+      ...typeDefaults,
       billTo: parsed.billTo || invoice.billTo,
+      date: parsed.date || invoice.date,
       lineItems: parsed.lineItems.length > 0 ? parsed.lineItems : invoice.lineItems,
+      depositReceived: parsed.depositReceived ?? invoice.depositReceived,
+      cautionFee: parsed.cautionFee ?? invoice.cautionFee,
+      handlingFee: parsed.handlingFee ?? invoice.handlingFee,
     });
     toast({
       title: 'Invoice auto-filled',
-      description: `Parsed ${parsed.lineItems.length} line item(s).`,
+      description: `Parsed ${parsed.lineItems.length} line item(s)${parsed.billTo ? ` for ${parsed.billTo}` : ''}.`,
     });
   };
 
@@ -91,13 +101,13 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            Paste plain text — first line is the customer, then list items. Examples: "40pc x30k", "10 x 5,000", "2 @ 1.5m". "Plus VAT" lines are ignored.
+            Paste any rough notes — the parser auto-detects the customer, items, quantities, rates, deposit, and fees. Understands formats like "40pc x30k", "40 robes at 30,000 each", "10 @ 5k", "deposit 500k", "rental".
           </p>
           <Textarea
             value={smartText}
             onChange={(e) => setSmartText(e.target.value)}
-            rows={6}
-            placeholder={'First Baptist Church\n\nChoir robes\n40pc x30k\n\nPlus VAT'}
+            rows={7}
+            placeholder={'First Baptist Church needs 40 choir robes at 30k each.\nAlso 10 stoles for 5,000 each.\nDeposit: 500k\nPlus VAT'}
           />
           <Button onClick={handleSmartFill} className="w-full">
             <Wand2 className="h-4 w-4 mr-2" />
