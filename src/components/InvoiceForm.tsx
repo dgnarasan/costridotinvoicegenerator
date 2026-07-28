@@ -237,7 +237,7 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
                 <Input
                   value={item.description}
                   onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
-                  placeholder="e.g., Choir robes"
+                  placeholder={business.itemPlaceholder}
                 />
               </div>
               

@@ -16,15 +16,32 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import costridotLogo from '@/assets/costridot-logo.jpeg';
+import { BUSINESSES, BusinessId, getBusiness } from '@/config/businesses';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const Index = () => {
-  const [invoice, setInvoice] = useState<Invoice>(createNewInvoice());
+  const [business, setBusiness] = useState<BusinessId>(
+    () => (localStorage.getItem('activeBusiness') as BusinessId) || 'costridot'
+  );
+  const [invoice, setInvoice] = useState<Invoice>(() =>
+    createNewInvoice('production', (localStorage.getItem('activeBusiness') as BusinessId) || 'costridot')
+  );
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [logoBase64, setLogoBase64] = useState<string>('');
   const [activeTab, setActiveTab] = useState('form');
   const previewRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const businessConfig = getBusiness(business);
+
+  const handleBusinessChange = (next: BusinessId) => {
+    setBusiness(next);
+    localStorage.setItem('activeBusiness', next);
+    setInvoice(createNewInvoice('production', next));
+    toast({
+      title: `Switched to ${getBusiness(next).name}`,
+      description: 'Started a new invoice for this business.',
+    });
+  };
 
   // Auto-save invoice whenever it changes (debounced) once it has content
   useEffect(() => {
@@ -43,13 +60,15 @@ const Index = () => {
 
   // Convert logo to base64 for PDF
   useEffect(() => {
+    let cancelled = false;
     const convertLogoToBase64 = async () => {
       try {
-        const response = await fetch(costridotLogo);
+        setLogoBase64('');
+        const response = await fetch(businessConfig.logo);
         const blob = await response.blob();
         const reader = new FileReader();
         reader.onloadend = () => {
-          setLogoBase64(reader.result as string);
+          if (!cancelled) setLogoBase64(reader.result as string);
         };
         reader.readAsDataURL(blob);
       } catch (error) {
@@ -57,7 +76,10 @@ const Index = () => {
       }
     };
     convertLogoToBase64();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [businessConfig.logo]);
 
   const handleSave = () => {
     if (!invoice.billTo.trim()) {
@@ -97,7 +119,7 @@ const Index = () => {
   };
 
   const handleNewInvoice = () => {
-    setInvoice(createNewInvoice());
+    setInvoice(createNewInvoice('production', business));
     toast({
       title: 'New invoice created',
       description: 'Ready to create a new invoice',
@@ -106,6 +128,10 @@ const Index = () => {
 
   const handleLoadInvoice = (loadedInvoice: Invoice) => {
     setInvoice(loadedInvoice);
+    if (loadedInvoice.business && loadedInvoice.business !== business) {
+      setBusiness(loadedInvoice.business);
+      localStorage.setItem('activeBusiness', loadedInvoice.business);
+    }
     setActiveTab('form');
     toast({
       title: 'Invoice loaded',
