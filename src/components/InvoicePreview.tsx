@@ -32,8 +32,8 @@ const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
             <div 
               className="overflow-hidden"
               style={{ 
-                width: '130px', 
-                height: '130px', 
+                width: `${business.logoWidth}px`, 
+                height: `${business.logoHeight}px`, 
                 backgroundColor: business.logoBackground,
                 border: '1px solid #333'
               }}
@@ -41,7 +41,8 @@ const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
               <img 
                 src={business.logo} 
                 alt={business.name} 
-                className="w-full h-full object-cover"
+                className="w-full h-full"
+                style={{ objectFit: business.logoFit }}
               />
             </div>
           </div>
@@ -99,7 +100,7 @@ const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
           </p>
           <p style={{ color: '#888', fontSize: '12px', marginBottom: '4px' }}>Bill To:</p>
           <p style={{ color: '#333', fontWeight: 600, fontSize: '14px' }}>
-            {invoice.billTo || 'Church Name'}
+            {invoice.billTo || 'Customer Name'}
           </p>
         </div>
 
