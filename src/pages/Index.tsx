@@ -149,13 +149,24 @@ const Index = () => {
       <header className="border-b border-border bg-card sticky top-0 z-50 print:hidden">
         <div className="container mx-auto px-4 py-3 lg:py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 lg:gap-3">
-              <div className="w-8 h-8 lg:w-10 lg:h-10 bg-foreground rounded flex items-center justify-center">
-                <span className="text-background font-bold text-sm lg:text-lg">CD</span>
+            <div className="flex items-center gap-2 lg:gap-3 min-w-0">
+              <div className="w-8 h-8 lg:w-10 lg:h-10 bg-foreground rounded flex items-center justify-center shrink-0">
+                <span className="text-background font-bold text-sm lg:text-lg">{businessConfig.initials}</span>
               </div>
-              <div>
-                <h1 className="text-base lg:text-xl font-bold text-foreground">Costridot Invoice</h1>
-                <p className="text-xs text-muted-foreground hidden sm:block">Create professional invoices</p>
+              <div className="min-w-0">
+                <Select value={business} onValueChange={(v: BusinessId) => handleBusinessChange(v)}>
+                  <SelectTrigger className="h-8 border-none px-1 font-bold text-base lg:text-xl shadow-none focus:ring-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.values(BUSINESSES).map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.shortName} Invoice
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground hidden sm:block pl-1">{businessConfig.tagline}</p>
               </div>
             </div>
             
