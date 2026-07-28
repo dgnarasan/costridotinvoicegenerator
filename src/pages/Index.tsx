@@ -58,21 +58,31 @@ const Index = () => {
     return () => clearTimeout(timer);
   }, [invoice]);
 
-  // Convert logo to base64 for PDF
+  // Convert logo to base64 for PDF via canvas (normalizes JPEG encoding)
   useEffect(() => {
     let cancelled = false;
     const convertLogoToBase64 = async () => {
       try {
         setLogoBase64('');
-        const response = await fetch(businessConfig.logo);
-        const blob = await response.blob();
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          if (!cancelled) setLogoBase64(reader.result as string);
+        const img = new window.Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          if (cancelled) return;
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return;
+          ctx.drawImage(img, 0, 0);
+          const dataUrl = canvas.toDataURL('image/png');
+          if (!cancelled) setLogoBase64(dataUrl);
         };
-        reader.readAsDataURL(blob);
+        img.onerror = () => {
+          console.error('Failed to load logo image');
+        };
+        img.src = businessConfig.logo;
       } catch (error) {
-        console.error('Failed to load logo:', error);
+        console.error('Failed to convert logo:', error);
       }
     };
     convertLogoToBase64();

@@ -253,7 +253,6 @@ const InvoicePDF = ({ invoice, logoBase64 }: InvoicePDFProps) => {
                 style={{
                   width: business.logoWidth * logoScale,
                   height: 110,
-                  objectFit: business.logoFit,
                 }}
               />
             )}
