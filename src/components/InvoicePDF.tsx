@@ -16,6 +16,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 40,
   },
+  logoContainer: {
+    overflow: 'hidden',
+  },
   headerRight: {
     alignItems: 'flex-end',
   },
@@ -28,7 +31,7 @@ const styles = StyleSheet.create({
   },
   invoiceNumber: {
     fontSize: 12,
-    color: '#666',
+    color: '#888',
     marginBottom: 14,
   },
   detailRow: {
@@ -44,45 +47,49 @@ const styles = StyleSheet.create({
   detailValue: {
     fontSize: 11,
     color: '#333',
-    width: 100,
+    fontWeight: 600,
+    width: 110,
     textAlign: 'right',
   },
   balanceBox: {
-    backgroundColor: '#eeeeee',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    backgroundColor: '#b8964e',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
     marginTop: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    minWidth: 240,
+    minWidth: 260,
+    borderRadius: 5,
   },
   balanceLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 600,
-    color: '#333',
+    color: '#ffffff',
+    letterSpacing: 0.5,
   },
   balanceValue: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: 700,
-    color: '#333',
+    color: '#ffffff',
   },
   senderBillTo: {
-    marginBottom: 24,
+    marginBottom: 28,
   },
   senderName: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: 600,
     color: '#333',
     marginBottom: 16,
   },
   billToLabel: {
-    fontSize: 10,
+    fontSize: 9,
     color: '#888',
     marginBottom: 4,
+    letterSpacing: 0.5,
   },
   billToValue: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: 600,
     color: '#333',
   },
@@ -91,21 +98,32 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#3f3f3f',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    backgroundColor: '#2d2d2d',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderTopLeftRadius: 5,
+    borderTopRightRadius: 5,
   },
   tableHeaderCell: {
     color: '#ffffff',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: 600,
+    letterSpacing: 0.5,
   },
   tableRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+  },
+  tableRowAlt: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    backgroundColor: '#fafafa',
   },
   itemCol: {
     flex: 3,
@@ -127,12 +145,12 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   totalsBox: {
-    width: 240,
+    width: 260,
   },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   totalLabel: {
     fontSize: 11,
@@ -141,37 +159,74 @@ const styles = StyleSheet.create({
   totalValue: {
     fontSize: 11,
     color: '#333',
+    fontWeight: 600,
   },
   totalRowBorder: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: 8,
-    borderTopWidth: 1,
+    paddingTop: 10,
+    borderTopWidth: 2,
     borderTopColor: '#ddd',
-    marginBottom: 6,
+    marginBottom: 8,
+  },
+  totalLabelBold: {
+    fontSize: 11,
+    color: '#444',
+    fontWeight: 600,
   },
   totalValueBold: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#333',
+    fontWeight: 700,
+  },
+  depositValue: {
+    fontSize: 11,
+    color: '#2a7d2e',
     fontWeight: 600,
   },
   termsContainer: {
     marginTop: 20,
   },
   sectionLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: 600,
-    color: '#666',
+    color: '#555',
     marginBottom: 4,
+    letterSpacing: 0.5,
   },
   termsText: {
     fontSize: 9,
     color: '#666',
-    lineHeight: 1.5,
+    lineHeight: 1.6,
     marginBottom: 2,
   },
   notesSection: {
     marginBottom: 14,
+  },
+  accountBox: {
+    marginTop: 14,
+    padding: 12,
+    backgroundColor: '#f8f8f8',
+    borderLeftWidth: 3,
+    borderLeftColor: '#b8964e',
+    borderRadius: 4,
+  },
+  accountName: {
+    fontSize: 10,
+    color: '#333',
+    fontWeight: 600,
+    marginBottom: 2,
+  },
+  accountDetail: {
+    fontSize: 9,
+    color: '#666',
+    marginBottom: 1,
+  },
+  accountNumber: {
+    fontSize: 10,
+    color: '#333',
+    fontWeight: 600,
+    letterSpacing: 0.5,
   },
 });
 
@@ -183,7 +238,7 @@ interface InvoicePDFProps {
 const InvoicePDF = ({ invoice, logoBase64 }: InvoicePDFProps) => {
   const calculations = calculateInvoice(invoice);
   const business = getBusiness(invoice.business);
-  const logoScale = 100 / business.logoHeight;
+  const logoScale = 110 / business.logoHeight;
 
   return (
     <Document>
@@ -193,14 +248,22 @@ const InvoicePDF = ({ invoice, logoBase64 }: InvoicePDFProps) => {
           {/* Logo */}
           <View>
             {logoBase64 && (
-              <Image
-                src={logoBase64}
-                style={{
-                  width: business.logoWidth * logoScale,
-                  height: 100,
-                  objectFit: business.logoFit,
-                }}
-              />
+              <View style={{
+                width: business.logoWidth * logoScale,
+                height: 110,
+                backgroundColor: business.logoBackground,
+                borderRadius: business.logoBorderRadius,
+                overflow: 'hidden',
+              }}>
+                <Image
+                  src={logoBase64}
+                  style={{
+                    width: business.logoWidth * logoScale,
+                    height: 110,
+                    objectFit: business.logoFit,
+                  }}
+                />
+              </View>
             )}
           </View>
 
@@ -229,24 +292,24 @@ const InvoicePDF = ({ invoice, logoBase64 }: InvoicePDFProps) => {
         {/* Sender and Bill To */}
         <View style={styles.senderBillTo}>
           <Text style={styles.senderName}>{invoice.senderName}</Text>
-          <Text style={styles.billToLabel}>Bill To:</Text>
+          <Text style={styles.billToLabel}>BILL TO:</Text>
           <Text style={styles.billToValue}>{invoice.billTo || 'Customer Name'}</Text>
         </View>
 
         {/* Items Table */}
         <View style={styles.table}>
           <View style={styles.tableHeader}>
-            <Text style={[styles.tableHeaderCell, styles.itemCol]}>Item</Text>
-            <Text style={[styles.tableHeaderCell, styles.qtyCol]}>Quantity</Text>
-            <Text style={[styles.tableHeaderCell, styles.rateCol]}>Rate</Text>
-            <Text style={[styles.tableHeaderCell, styles.amountCol]}>Amount</Text>
+            <Text style={[styles.tableHeaderCell, styles.itemCol]}>ITEM</Text>
+            <Text style={[styles.tableHeaderCell, styles.qtyCol]}>QTY</Text>
+            <Text style={[styles.tableHeaderCell, styles.rateCol]}>RATE</Text>
+            <Text style={[styles.tableHeaderCell, styles.amountCol]}>AMOUNT</Text>
           </View>
-          {invoice.lineItems.map((item) => (
-            <View key={item.id} style={styles.tableRow}>
+          {invoice.lineItems.map((item, index) => (
+            <View key={item.id} style={index % 2 === 1 ? styles.tableRowAlt : styles.tableRow}>
               <Text style={styles.itemCol}>{item.description || '-'}</Text>
               <Text style={styles.qtyCol}>{item.quantity}</Text>
               <Text style={styles.rateCol}>{formatCurrency(item.rate)}</Text>
-              <Text style={styles.amountCol}>{formatCurrency(calculateLineAmount(item.quantity, item.rate))}</Text>
+              <Text style={[styles.amountCol, { fontWeight: 600 }]}>{formatCurrency(calculateLineAmount(item.quantity, item.rate))}</Text>
             </View>
           ))}
         </View>
@@ -271,13 +334,13 @@ const InvoicePDF = ({ invoice, logoBase64 }: InvoicePDFProps) => {
               </View>
             )}
             <View style={styles.totalRowBorder}>
-              <Text style={styles.totalLabel}>Total (inclusive of 7.5% VAT):</Text>
+              <Text style={styles.totalLabelBold}>Total (inclusive of 7.5% VAT):</Text>
               <Text style={styles.totalValueBold}>{formatCurrency(calculations.total)}</Text>
             </View>
             {invoice.depositReceived > 0 && (
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Deposit received:</Text>
-                <Text style={styles.totalValue}>{formatCurrency(invoice.depositReceived)}</Text>
+                <Text style={styles.depositValue}>{formatCurrency(invoice.depositReceived)}</Text>
               </View>
             )}
           </View>
@@ -287,7 +350,7 @@ const InvoicePDF = ({ invoice, logoBase64 }: InvoicePDFProps) => {
         <View style={styles.termsContainer}>
           {invoice.invoiceType === 'rental' && invoice.notesText ? (
             <View style={styles.notesSection}>
-              <Text style={styles.sectionLabel}>Notes:</Text>
+              <Text style={styles.sectionLabel}>NOTES:</Text>
               {invoice.notesText.split('\n').map((line, i) => (
                 <Text key={i} style={styles.termsText}>{line}</Text>
               ))}
@@ -295,14 +358,18 @@ const InvoicePDF = ({ invoice, logoBase64 }: InvoicePDFProps) => {
           ) : null}
           
           <View>
-            <Text style={styles.sectionLabel}>Terms:</Text>
+            <Text style={styles.sectionLabel}>TERMS:</Text>
             {invoice.termsText.split('\n').map((line, i) => (
               <Text key={i} style={styles.termsText}>{line}</Text>
             ))}
-            <Text style={[styles.termsText, { marginTop: 4 }]}>Account details:</Text>
-            <Text style={styles.termsText}>{invoice.accountName}</Text>
-            <Text style={styles.termsText}>{invoice.bankName}</Text>
-            <Text style={styles.termsText}>{invoice.accountNumber}</Text>
+          </View>
+
+          {/* Account Details Box */}
+          <View style={styles.accountBox}>
+            <Text style={styles.sectionLabel}>ACCOUNT DETAILS:</Text>
+            <Text style={styles.accountName}>{invoice.accountName}</Text>
+            <Text style={styles.accountDetail}>{invoice.bankName}</Text>
+            <Text style={styles.accountNumber}>{invoice.accountNumber}</Text>
           </View>
         </View>
       </Page>

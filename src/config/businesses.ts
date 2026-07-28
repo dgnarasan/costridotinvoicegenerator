@@ -12,9 +12,11 @@ export interface BusinessConfig {
   senderName: string;
   logo: string;
   logoBackground: string;
+  logoBorder: string;
   logoWidth: number;
   logoHeight: number;
   logoFit: 'cover' | 'contain';
+  logoBorderRadius: number;
   filePrefix: string;
   billToLabel: string;
   itemPlaceholder: string;
@@ -42,9 +44,11 @@ export const BUSINESSES: Record<BusinessId, BusinessConfig> = {
     senderName: 'Olayinka O Fagbuaro',
     logo: costridotLogo,
     logoBackground: '#000000',
-    logoWidth: 130,
-    logoHeight: 130,
+    logoBorder: 'none',
+    logoWidth: 140,
+    logoHeight: 140,
     logoFit: 'cover',
+    logoBorderRadius: 8,
     filePrefix: 'Costridot_Invoice',
     billToLabel: 'Bill To (Church/Customer Name) *',
     itemPlaceholder: 'e.g., Choir robes',
@@ -66,10 +70,12 @@ export const BUSINESSES: Record<BusinessId, BusinessConfig> = {
     tagline: 'Catering & events',
     senderName: 'Foodwebb Catering Services',
     logo: foodwebbLogo,
-    logoBackground: '#000000',
-    logoWidth: 190,
-    logoHeight: 127,
+    logoBackground: '#ffffff',
+    logoBorder: '1px solid #e0e0e0',
+    logoWidth: 160,
+    logoHeight: 140,
     logoFit: 'contain',
+    logoBorderRadius: 8,
     filePrefix: 'Foodwebb_Invoice',
     billToLabel: 'Bill To (Client/Event Name) *',
     itemPlaceholder: 'e.g., Jollof rice (per plate)',

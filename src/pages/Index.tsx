@@ -150,8 +150,16 @@ const Index = () => {
         <div className="container mx-auto px-4 py-3 lg:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 lg:gap-3 min-w-0">
-              <div className="w-8 h-8 lg:w-10 lg:h-10 bg-foreground rounded flex items-center justify-center shrink-0">
-                <span className="text-background font-bold text-sm lg:text-lg">{businessConfig.initials}</span>
+              <div 
+                className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden"
+                style={{ backgroundColor: businessConfig.logoBackground, border: businessConfig.logoBorder || 'none' }}
+              >
+                <img 
+                  src={businessConfig.logo} 
+                  alt={businessConfig.shortName}
+                  className="w-full h-full"
+                  style={{ objectFit: businessConfig.logoFit }}
+                />
               </div>
               <div className="min-w-0">
                 <Select value={business} onValueChange={(v: BusinessId) => handleBusinessChange(v)}>
@@ -272,13 +280,13 @@ const Index = () => {
             </TabsContent>
             
             <TabsContent value="preview">
-              <div className="bg-muted rounded-lg p-2 overflow-auto">
-                <div className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+              <div className="bg-muted rounded-lg p-3 overflow-auto">
+                <div className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   Live Preview (A4)
                 </div>
                 <div className="overflow-x-auto">
-                  <div style={{ transform: 'scale(0.38)', transformOrigin: 'top left', width: '210mm' }}>
+                  <div style={{ transform: 'scale(0.42)', transformOrigin: 'top left', width: '210mm' }}>
                     <InvoicePreview ref={previewRef} invoice={invoice} />
                   </div>
                 </div>
