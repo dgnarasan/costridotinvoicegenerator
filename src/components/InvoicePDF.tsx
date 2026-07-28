@@ -248,22 +248,14 @@ const InvoicePDF = ({ invoice, logoBase64 }: InvoicePDFProps) => {
           {/* Logo */}
           <View>
             {logoBase64 && (
-              <View style={{
-                width: business.logoWidth * logoScale,
-                height: 110,
-                backgroundColor: business.logoBackground,
-                borderRadius: business.logoBorderRadius,
-                overflow: 'hidden',
-              }}>
-                <Image
-                  src={logoBase64}
-                  style={{
-                    width: business.logoWidth * logoScale,
-                    height: 110,
-                    objectFit: business.logoFit,
-                  }}
-                />
-              </View>
+              <Image
+                src={logoBase64}
+                style={{
+                  width: business.logoWidth * logoScale,
+                  height: 110,
+                  objectFit: business.logoFit,
+                }}
+              />
             )}
           </View>
 
