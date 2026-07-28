@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Trash2, Wand2 } from 'lucide-react';
+import { getBusiness } from '@/config/businesses';
 
 interface InvoiceFormProps {
   invoice: Invoice;
@@ -19,6 +20,7 @@ interface InvoiceFormProps {
 const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
   const [smartText, setSmartText] = useState('');
   const { toast } = useToast();
+  const business = getBusiness(invoice.business);
 
   const handleSmartFill = () => {
     const parsed = parseSmartInput(smartText);
@@ -32,7 +34,7 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
     }
     const nextType = parsed.invoiceType || invoice.invoiceType;
     const typeChanged = nextType !== invoice.invoiceType;
-    const typeDefaults = typeChanged ? getDefaults(nextType) : {};
+    const typeDefaults = typeChanged ? getDefaults(nextType, invoice.business) : {};
     onChange({
       ...invoice,
       invoiceType: nextType,
@@ -56,7 +58,7 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
   };
 
   const updateInvoiceType = (type: InvoiceType) => {
-    const defaults = getDefaults(type);
+    const defaults = getDefaults(type, invoice.business);
     onChange({
       ...invoice,
       invoiceType: type,
@@ -101,13 +103,13 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            Paste any rough notes — the parser auto-detects the customer, items, quantities, rates, deposit, and fees. Understands formats like "40pc x30k", "40 robes at 30,000 each", "10 @ 5k", "deposit 500k", "rental".
+            Paste any rough notes — the parser auto-detects the customer, items, quantities, rates, deposit, and fees. Understands formats like "40pc x30k", "200 plates at 5,000 each", "10 @ 5k", "deposit 500k", "rental".
           </p>
           <Textarea
             value={smartText}
             onChange={(e) => setSmartText(e.target.value)}
             rows={7}
-            placeholder={'First Baptist Church needs 40 choir robes at 30k each.\nAlso 10 stoles for 5,000 each.\nDeposit: 500k\nPlus VAT'}
+            placeholder={business.smartInputPlaceholder}
           />
           <Button onClick={handleSmartFill} className="w-full">
             <Wand2 className="h-4 w-4 mr-2" />
@@ -133,8 +135,8 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="production">Production</SelectItem>
-                  <SelectItem value="rental">Rental</SelectItem>
+                  <SelectItem value="production">{business.typeLabels.production}</SelectItem>
+                  <SelectItem value="rental">{business.typeLabels.rental}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -194,12 +196,12 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
         </CardHeader>
         <CardContent>
           <div>
-            <Label htmlFor="billTo">Bill To (Church/Customer Name) *</Label>
+            <Label htmlFor="billTo">{business.billToLabel}</Label>
             <Input
               id="billTo"
               value={invoice.billTo}
               onChange={(e) => updateField('billTo', e.target.value)}
-              placeholder="Enter church or customer name"
+                  placeholder="Enter customer name"
               required
             />
           </div>
