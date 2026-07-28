@@ -187,7 +187,7 @@ const Index = () => {
               {logoBase64 && (
                 <PDFDownloadLink
                   document={<InvoicePDF invoice={invoice} logoBase64={logoBase64} />}
-                  fileName={`Costridot_Invoice_${invoice.invoiceNumber}.pdf`}
+                  fileName={`${businessConfig.filePrefix}_${invoice.invoiceNumber}.pdf`}
                 >
                   {({ loading }) => (
                     <Button variant="outline" size="sm" disabled={loading}>
@@ -234,7 +234,7 @@ const Index = () => {
               {logoBase64 && (
                 <PDFDownloadLink
                   document={<InvoicePDF invoice={invoice} logoBase64={logoBase64} />}
-                  fileName={`Costridot_Invoice_${invoice.invoiceNumber}.pdf`}
+                  fileName={`${businessConfig.filePrefix}_${invoice.invoiceNumber}.pdf`}
                 >
                   {({ loading }) => (
                     <Button variant="default" size="sm" disabled={loading}>
@@ -290,6 +290,7 @@ const Index = () => {
                 onLoad={handleLoadInvoice} 
                 onDuplicate={handleDuplicate}
                 refreshKey={historyRefreshKey}
+                business={business}
               />
             </TabsContent>
           </Tabs>
@@ -320,6 +321,7 @@ const Index = () => {
                   onLoad={handleLoadInvoice} 
                   onDuplicate={handleDuplicate}
                   refreshKey={historyRefreshKey}
+                  business={business}
                 />
               </TabsContent>
             </Tabs>
