@@ -1,7 +1,7 @@
 import { forwardRef } from 'react';
 import { Invoice } from '@/types/invoice';
 import { formatCurrency, calculateInvoice, calculateLineAmount, formatDate } from '@/utils/invoiceUtils';
-import costridotLogo from '@/assets/costridot-logo.jpeg';
+import { getBusiness } from '@/config/businesses';
 
 interface InvoicePreviewProps {
   invoice: Invoice;
@@ -10,6 +10,7 @@ interface InvoicePreviewProps {
 const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
   ({ invoice }, ref) => {
     const calculations = calculateInvoice(invoice);
+    const business = getBusiness(invoice.business);
 
     return (
       <div
@@ -33,13 +34,13 @@ const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
               style={{ 
                 width: '130px', 
                 height: '130px', 
-                backgroundColor: '#000',
+                backgroundColor: business.logoBackground,
                 border: '1px solid #333'
               }}
             >
               <img 
-                src={costridotLogo} 
-                alt="Costridot International" 
+                src={business.logo} 
+                alt={business.name} 
                 className="w-full h-full object-cover"
               />
             </div>

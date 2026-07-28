@@ -6,24 +6,28 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Copy, Trash2, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { BusinessId, getBusiness } from '@/config/businesses';
 
 interface InvoiceHistoryProps {
   onLoad: (invoice: Invoice) => void;
   onDuplicate: (invoice: Invoice) => void;
   refreshKey: number;
+  business?: BusinessId;
 }
 
-const InvoiceHistory = ({ onLoad, onDuplicate, refreshKey }: InvoiceHistoryProps) => {
+const InvoiceHistory = ({ onLoad, onDuplicate, refreshKey, business }: InvoiceHistoryProps) => {
   const { toast } = useToast();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
 
   useEffect(() => {
     setInvoices(
-      getStoredInvoices().sort(
-        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-      )
+      getStoredInvoices()
+        .filter(inv => !business || (inv.business ?? 'costridot') === business)
+        .sort(
+          (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        )
     );
-  }, [refreshKey]);
+  }, [refreshKey, business]);
 
   const handleDelete = (id: string, invoiceNumber: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -66,7 +70,7 @@ const InvoiceHistory = ({ onLoad, onDuplicate, refreshKey }: InvoiceHistoryProps
                   <div className="flex items-center gap-2">
                     <span className="font-semibold">#{invoice.invoiceNumber}</span>
                     <Badge variant={invoice.invoiceType === 'production' ? 'default' : 'secondary'}>
-                      {invoice.invoiceType}
+                      {getBusiness(invoice.business).typeLabels[invoice.invoiceType]}
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">{invoice.billTo || 'No customer'}</p>
