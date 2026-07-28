@@ -38,13 +38,18 @@ const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
                 backgroundColor: business.logoBackground,
                 border: business.logoBorder,
                 borderRadius: `${business.logoBorderRadius}px`,
+                WebkitPrintColorAdjust: 'exact' as any,
+                printColorAdjust: 'exact' as any,
               }}
             >
               <img 
                 src={business.logo} 
                 alt={business.name} 
                 className="w-full h-full"
-                style={{ objectFit: business.logoFit }}
+                style={{ 
+                  objectFit: business.logoFit,
+                  WebkitPrintColorAdjust: 'exact' as any,
+                }}
               />
             </div>
           </div>
