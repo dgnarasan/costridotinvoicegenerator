@@ -1,4 +1,5 @@
 import { Invoice, InvoiceCalculations, LineItem, InvoiceType } from '@/types/invoice';
+import { BusinessId, getBusiness, BUSINESS_ACCOUNT } from '@/config/businesses';
 
 export const formatCurrency = (amount: number): string => {
   return `NGN ${amount.toLocaleString('en-NG', {
@@ -37,33 +38,28 @@ export const getDefaultPaymentTerms = (type: InvoiceType): string => {
   return type === 'production' ? 'Minimum of 80%' : '100%';
 };
 
-const getDefaultTerms = (type: InvoiceType): string => {
-  return type === 'production'
-    ? 'A minimum of 80% upfront payment is required to book production timeline.\nBalance is to be paid upon notification of completion ( not later than forty eight (48) hours. Pick-up or delivery is to be handled by client.'
-    : '100% payment into:';
+export const getDefaults = (type: InvoiceType, business: BusinessId = 'costridot') => {
+  const config = getBusiness(business);
+  return {
+    termsText: config.terms[type],
+    notesText: config.notes[type],
+    ...BUSINESS_ACCOUNT,
+  };
 };
 
-const getDefaultNotes = (type: InvoiceType): string => {
-  return type === 'rental' ? 'Pick-up or delivery is to be handled by client' : '';
-};
-
-export const getDefaults = (type: InvoiceType) => ({
-  termsText: getDefaultTerms(type),
-  notesText: getDefaultNotes(type),
-  accountName: 'Costridot International',
-  bankName: 'Kuda Bank',
-  accountNumber: '3003475464',
-});
-
-export const createNewInvoice = (type: InvoiceType = 'production'): Invoice => {
-  const defaults = getDefaults(type);
+export const createNewInvoice = (
+  type: InvoiceType = 'production',
+  business: BusinessId = 'costridot'
+): Invoice => {
+  const defaults = getDefaults(type, business);
   return {
     id: crypto.randomUUID(),
     invoiceNumber: generateInvoiceNumber(),
     invoiceType: type,
+    business,
     date: new Date().toISOString().split('T')[0],
     paymentTerms: getDefaultPaymentTerms(type),
-    senderName: 'Olayinka O Fagbuaro',
+    senderName: getBusiness(business).senderName,
     billTo: '',
     lineItems: [
       { id: crypto.randomUUID(), description: '', quantity: 1, rate: 0 },
