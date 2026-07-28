@@ -1,5 +1,8 @@
 export type InvoiceType = 'production' | 'rental';
 
+export type { BusinessId } from '@/config/businesses';
+import type { BusinessId } from '@/config/businesses';
+
 export interface LineItem {
   id: string;
   description: string;
@@ -11,6 +14,7 @@ export interface Invoice {
   id: string;
   invoiceNumber: string;
   invoiceType: InvoiceType;
+  business: BusinessId;
   date: string;
   paymentTerms: string;
   senderName: string;

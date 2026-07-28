@@ -1,7 +1,7 @@
 import { forwardRef } from 'react';
 import { Invoice } from '@/types/invoice';
 import { formatCurrency, calculateInvoice, calculateLineAmount, formatDate } from '@/utils/invoiceUtils';
-import costridotLogo from '@/assets/costridot-logo.jpeg';
+import { getBusiness } from '@/config/businesses';
 
 interface InvoicePreviewProps {
   invoice: Invoice;
@@ -10,6 +10,7 @@ interface InvoicePreviewProps {
 const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
   ({ invoice }, ref) => {
     const calculations = calculateInvoice(invoice);
+    const business = getBusiness(invoice.business);
 
     return (
       <div
@@ -31,16 +32,17 @@ const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
             <div 
               className="overflow-hidden"
               style={{ 
-                width: '130px', 
-                height: '130px', 
-                backgroundColor: '#000',
+                width: `${business.logoWidth}px`, 
+                height: `${business.logoHeight}px`, 
+                backgroundColor: business.logoBackground,
                 border: '1px solid #333'
               }}
             >
               <img 
-                src={costridotLogo} 
-                alt="Costridot International" 
-                className="w-full h-full object-cover"
+                src={business.logo} 
+                alt={business.name} 
+                className="w-full h-full"
+                style={{ objectFit: business.logoFit }}
               />
             </div>
           </div>
@@ -98,7 +100,7 @@ const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
           </p>
           <p style={{ color: '#888', fontSize: '12px', marginBottom: '4px' }}>Bill To:</p>
           <p style={{ color: '#333', fontWeight: 600, fontSize: '14px' }}>
-            {invoice.billTo || 'Church Name'}
+            {invoice.billTo || 'Customer Name'}
           </p>
         </div>
 

@@ -16,15 +16,32 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import costridotLogo from '@/assets/costridot-logo.jpeg';
+import { BUSINESSES, BusinessId, getBusiness } from '@/config/businesses';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const Index = () => {
-  const [invoice, setInvoice] = useState<Invoice>(createNewInvoice());
+  const [business, setBusiness] = useState<BusinessId>(
+    () => (localStorage.getItem('activeBusiness') as BusinessId) || 'costridot'
+  );
+  const [invoice, setInvoice] = useState<Invoice>(() =>
+    createNewInvoice('production', (localStorage.getItem('activeBusiness') as BusinessId) || 'costridot')
+  );
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [logoBase64, setLogoBase64] = useState<string>('');
   const [activeTab, setActiveTab] = useState('form');
   const previewRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const businessConfig = getBusiness(business);
+
+  const handleBusinessChange = (next: BusinessId) => {
+    setBusiness(next);
+    localStorage.setItem('activeBusiness', next);
+    setInvoice(createNewInvoice('production', next));
+    toast({
+      title: `Switched to ${getBusiness(next).name}`,
+      description: 'Started a new invoice for this business.',
+    });
+  };
 
   // Auto-save invoice whenever it changes (debounced) once it has content
   useEffect(() => {
@@ -43,13 +60,15 @@ const Index = () => {
 
   // Convert logo to base64 for PDF
   useEffect(() => {
+    let cancelled = false;
     const convertLogoToBase64 = async () => {
       try {
-        const response = await fetch(costridotLogo);
+        setLogoBase64('');
+        const response = await fetch(businessConfig.logo);
         const blob = await response.blob();
         const reader = new FileReader();
         reader.onloadend = () => {
-          setLogoBase64(reader.result as string);
+          if (!cancelled) setLogoBase64(reader.result as string);
         };
         reader.readAsDataURL(blob);
       } catch (error) {
@@ -57,7 +76,10 @@ const Index = () => {
       }
     };
     convertLogoToBase64();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [businessConfig.logo]);
 
   const handleSave = () => {
     if (!invoice.billTo.trim()) {
@@ -97,7 +119,7 @@ const Index = () => {
   };
 
   const handleNewInvoice = () => {
-    setInvoice(createNewInvoice());
+    setInvoice(createNewInvoice('production', business));
     toast({
       title: 'New invoice created',
       description: 'Ready to create a new invoice',
@@ -106,6 +128,10 @@ const Index = () => {
 
   const handleLoadInvoice = (loadedInvoice: Invoice) => {
     setInvoice(loadedInvoice);
+    if (loadedInvoice.business && loadedInvoice.business !== business) {
+      setBusiness(loadedInvoice.business);
+      localStorage.setItem('activeBusiness', loadedInvoice.business);
+    }
     setActiveTab('form');
     toast({
       title: 'Invoice loaded',
@@ -123,13 +149,24 @@ const Index = () => {
       <header className="border-b border-border bg-card sticky top-0 z-50 print:hidden">
         <div className="container mx-auto px-4 py-3 lg:py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 lg:gap-3">
-              <div className="w-8 h-8 lg:w-10 lg:h-10 bg-foreground rounded flex items-center justify-center">
-                <span className="text-background font-bold text-sm lg:text-lg">CD</span>
+            <div className="flex items-center gap-2 lg:gap-3 min-w-0">
+              <div className="w-8 h-8 lg:w-10 lg:h-10 bg-foreground rounded flex items-center justify-center shrink-0">
+                <span className="text-background font-bold text-sm lg:text-lg">{businessConfig.initials}</span>
               </div>
-              <div>
-                <h1 className="text-base lg:text-xl font-bold text-foreground">Costridot Invoice</h1>
-                <p className="text-xs text-muted-foreground hidden sm:block">Create professional invoices</p>
+              <div className="min-w-0">
+                <Select value={business} onValueChange={(v: BusinessId) => handleBusinessChange(v)}>
+                  <SelectTrigger className="h-8 border-none px-1 font-bold text-base lg:text-xl shadow-none focus:ring-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.values(BUSINESSES).map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.shortName} Invoice
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground hidden sm:block pl-1">{businessConfig.tagline}</p>
               </div>
             </div>
             
@@ -150,7 +187,7 @@ const Index = () => {
               {logoBase64 && (
                 <PDFDownloadLink
                   document={<InvoicePDF invoice={invoice} logoBase64={logoBase64} />}
-                  fileName={`Costridot_Invoice_${invoice.invoiceNumber}.pdf`}
+                  fileName={`${businessConfig.filePrefix}_${invoice.invoiceNumber}.pdf`}
                 >
                   {({ loading }) => (
                     <Button variant="outline" size="sm" disabled={loading}>
@@ -197,7 +234,7 @@ const Index = () => {
               {logoBase64 && (
                 <PDFDownloadLink
                   document={<InvoicePDF invoice={invoice} logoBase64={logoBase64} />}
-                  fileName={`Costridot_Invoice_${invoice.invoiceNumber}.pdf`}
+                  fileName={`${businessConfig.filePrefix}_${invoice.invoiceNumber}.pdf`}
                 >
                   {({ loading }) => (
                     <Button variant="default" size="sm" disabled={loading}>
@@ -253,6 +290,7 @@ const Index = () => {
                 onLoad={handleLoadInvoice} 
                 onDuplicate={handleDuplicate}
                 refreshKey={historyRefreshKey}
+                business={business}
               />
             </TabsContent>
           </Tabs>
@@ -283,6 +321,7 @@ const Index = () => {
                   onLoad={handleLoadInvoice} 
                   onDuplicate={handleDuplicate}
                   refreshKey={historyRefreshKey}
+                  business={business}
                 />
               </TabsContent>
             </Tabs>

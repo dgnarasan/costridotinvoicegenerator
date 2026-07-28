@@ -1,6 +1,7 @@
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
 import { Invoice } from '@/types/invoice';
 import { formatCurrency, calculateInvoice, calculateLineAmount, formatDate } from '@/utils/invoiceUtils';
+import { getBusiness } from '@/config/businesses';
 
 const styles = StyleSheet.create({
   page: {
@@ -14,11 +15,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 40,
-  },
-  logo: {
-    width: 100,
-    height: 100,
-    objectFit: 'cover',
   },
   headerRight: {
     alignItems: 'flex-end',
@@ -186,6 +182,8 @@ interface InvoicePDFProps {
 
 const InvoicePDF = ({ invoice, logoBase64 }: InvoicePDFProps) => {
   const calculations = calculateInvoice(invoice);
+  const business = getBusiness(invoice.business);
+  const logoScale = 100 / business.logoHeight;
 
   return (
     <Document>
@@ -195,7 +193,14 @@ const InvoicePDF = ({ invoice, logoBase64 }: InvoicePDFProps) => {
           {/* Logo */}
           <View>
             {logoBase64 && (
-              <Image src={logoBase64} style={styles.logo} />
+              <Image
+                src={logoBase64}
+                style={{
+                  width: business.logoWidth * logoScale,
+                  height: 100,
+                  objectFit: business.logoFit,
+                }}
+              />
             )}
           </View>
 
@@ -225,7 +230,7 @@ const InvoicePDF = ({ invoice, logoBase64 }: InvoicePDFProps) => {
         <View style={styles.senderBillTo}>
           <Text style={styles.senderName}>{invoice.senderName}</Text>
           <Text style={styles.billToLabel}>Bill To:</Text>
-          <Text style={styles.billToValue}>{invoice.billTo || 'Church Name'}</Text>
+          <Text style={styles.billToValue}>{invoice.billTo || 'Customer Name'}</Text>
         </View>
 
         {/* Items Table */}
