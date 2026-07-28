@@ -1,5 +1,5 @@
 import { Invoice, InvoiceCalculations, LineItem, InvoiceType } from '@/types/invoice';
-import { BusinessId, getBusiness, BUSINESS_ACCOUNT } from '@/config/businesses';
+import { BusinessId, getBusiness, getBusinessAccount } from '@/config/businesses';
 
 export const formatCurrency = (amount: number): string => {
   return `NGN ${amount.toLocaleString('en-NG', {
@@ -43,7 +43,7 @@ export const getDefaults = (type: InvoiceType, business: BusinessId = 'costridot
   return {
     termsText: config.terms[type],
     notesText: config.notes[type],
-    ...BUSINESS_ACCOUNT,
+    ...getBusinessAccount(business),
   };
 };
 

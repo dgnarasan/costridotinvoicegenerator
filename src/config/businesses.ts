@@ -26,13 +26,23 @@ export interface BusinessConfig {
   smartInputPlaceholder: string;
 }
 
-const ACCOUNT = {
-  accountName: 'Costridot International',
-  bankName: 'Kuda Bank',
-  accountNumber: '3003475464',
+const BUSINESS_ACCOUNTS: Record<BusinessId, { accountName: string; bankName: string; accountNumber: string }> = {
+  costridot: {
+    accountName: 'Costridot International',
+    bankName: 'Kuda Bank',
+    accountNumber: '3003475464',
+  },
+  foodwebb: {
+    accountName: 'Oluyemi Olayinka Fagbuaro',
+    bankName: 'Stanbic IBTC',
+    accountNumber: '0017208098',
+  },
 };
 
-export const BUSINESS_ACCOUNT = ACCOUNT;
+export const getBusinessAccount = (id: BusinessId = 'costridot') => BUSINESS_ACCOUNTS[id] ?? BUSINESS_ACCOUNTS.costridot;
+
+// Keep backward compat — default to costridot
+export const BUSINESS_ACCOUNT = BUSINESS_ACCOUNTS.costridot;
 
 export const BUSINESSES: Record<BusinessId, BusinessConfig> = {
   costridot: {
