@@ -1,5 +1,5 @@
 import costridotLogo from '@/assets/costridot-logo.jpeg';
-import foodwebbLogo from '@/assets/foodwebb-logo.png.asset.json';
+import foodwebbLogo from '@/assets/foodwebb-logo.jpeg';
 
 export type BusinessId = 'costridot' | 'foodwebb';
 
@@ -12,6 +12,9 @@ export interface BusinessConfig {
   senderName: string;
   logo: string;
   logoBackground: string;
+  logoWidth: number;
+  logoHeight: number;
+  logoFit: 'cover' | 'contain';
   filePrefix: string;
   billToLabel: string;
   itemPlaceholder: string;
@@ -39,6 +42,9 @@ export const BUSINESSES: Record<BusinessId, BusinessConfig> = {
     senderName: 'Olayinka O Fagbuaro',
     logo: costridotLogo,
     logoBackground: '#000000',
+    logoWidth: 130,
+    logoHeight: 130,
+    logoFit: 'cover',
     filePrefix: 'Costridot_Invoice',
     billToLabel: 'Bill To (Church/Customer Name) *',
     itemPlaceholder: 'e.g., Choir robes',
@@ -59,8 +65,11 @@ export const BUSINESSES: Record<BusinessId, BusinessConfig> = {
     initials: 'FW',
     tagline: 'Catering & events',
     senderName: 'Foodwebb Catering Services',
-    logo: foodwebbLogo.url,
-    logoBackground: '#ffffff',
+    logo: foodwebbLogo,
+    logoBackground: '#000000',
+    logoWidth: 190,
+    logoHeight: 127,
+    logoFit: 'contain',
     filePrefix: 'Foodwebb_Invoice',
     billToLabel: 'Bill To (Client/Event Name) *',
     itemPlaceholder: 'e.g., Jollof rice (per plate)',
