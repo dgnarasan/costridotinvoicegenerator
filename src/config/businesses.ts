@@ -76,7 +76,7 @@ export const BUSINESSES: Record<BusinessId, BusinessConfig> = {
     typeLabels: { production: 'Catering', rental: 'Equipment Rental' },
     terms: {
       production:
-        'A minimum of 80% upfront payment is required to confirm the event booking.\nBalance is to be paid not later than forty eight (48) hours before the event date.',
+        'A minimum of 80% upfront payment is required to confirm the order.\nBalance is to be paid not later than forty eight (48) hours before the agreed delivery or pick-up date.',
       rental: '100% payment into:',
     },
     notes: {
