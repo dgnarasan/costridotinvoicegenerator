@@ -1,7 +1,8 @@
 import costridotLogo from '@/assets/costridot-logo.jpeg';
 import foodwebbLogo from '@/assets/foodwebb-logo.jpeg';
+import urabyjuliaLogo from '@/assets/urabyjulia-logo.jpeg';
 
-export type BusinessId = 'costridot' | 'foodwebb';
+export type BusinessId = 'costridot' | 'foodwebb' | 'urabyjulia';
 
 export interface BusinessConfig {
   id: BusinessId;
@@ -36,6 +37,11 @@ const BUSINESS_ACCOUNTS: Record<BusinessId, { accountName: string; bankName: str
     accountName: 'Oluyemi Olayinka Fagbuaro',
     bankName: 'Stanbic IBTC',
     accountNumber: '0017208098',
+  },
+  urabyjulia: {
+    accountName: 'Costridot International',
+    bankName: 'Kuda Bank',
+    accountNumber: '3003475464',
   },
 };
 
@@ -101,6 +107,33 @@ export const BUSINESSES: Record<BusinessId, BusinessConfig> = {
     },
     smartInputPlaceholder:
       'Adeyemi wedding, 200 plates of jollof rice at 5k each.\nAlso 100 small chops for 2,500 each.\nDeposit: 300k\nPlus VAT',
+  },
+  urabyjulia: {
+    id: 'urabyjulia',
+    name: 'URA by Julia',
+    shortName: 'URA by Julia',
+    initials: 'UJ',
+    tagline: 'Fashion & style',
+    senderName: 'URA by Julia',
+    logo: urabyjuliaLogo,
+    logoBackground: '#c8c4be',
+    logoBorder: 'none',
+    logoWidth: 140,
+    logoHeight: 140,
+    logoFit: 'cover',
+    logoBorderRadius: 8,
+    filePrefix: 'URAbyJulia_Invoice',
+    billToLabel: 'Bill To (Customer Name) *',
+    itemPlaceholder: 'e.g., Custom dress',
+    typeLabels: { production: 'Production', rental: 'Rental' },
+    terms: {
+      production:
+        'A minimum of 80% upfront payment is required to book production timeline.\nBalance is to be paid upon notification of completion ( not later than forty eight (48) hours. Pick-up or delivery is to be handled by client.',
+      rental: '100% payment into:',
+    },
+    notes: { production: '', rental: 'Pick-up or delivery is to be handled by client' },
+    smartInputPlaceholder:
+      'Mrs Adeyemi needs 3 custom dresses at 50k each.\nAlso 2 headpieces for 15,000 each.\nDeposit: 100k\nPlus VAT',
   },
 };
 
