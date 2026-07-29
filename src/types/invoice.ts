@@ -21,6 +21,7 @@ export interface Invoice {
   billTo: string;
   lineItems: LineItem[];
   taxRate: number;
+  discountPercent: number;
   cautionFee: number;
   handlingFee: number;
   depositReceived: number;
@@ -36,6 +37,7 @@ export interface Invoice {
 
 export interface InvoiceCalculations {
   subtotal: number;
+  discountAmount: number;
   taxAmount: number;
   total: number;
   balanceDue: number;

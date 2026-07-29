@@ -202,6 +202,12 @@ const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
               <span style={{ color: '#666' }}>Subtotal:</span>
               <span style={{ color: '#333', fontWeight: 500 }}>{formatCurrency(calculations.subtotal)}</span>
             </div>
+            {invoice.discountPercent > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '10px' }}>
+                <span style={{ color: '#c0392b' }}>Discount ({invoice.discountPercent}%):</span>
+                <span style={{ color: '#c0392b', fontWeight: 500 }}>- {formatCurrency(calculations.discountAmount)}</span>
+              </div>
+            )}
             {invoice.cautionFee > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '10px' }}>
                 <span style={{ color: '#666' }}>Caution Fee:</span>

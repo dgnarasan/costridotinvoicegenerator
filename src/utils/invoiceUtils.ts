@@ -17,13 +17,16 @@ export const calculateInvoice = (invoice: Invoice): InvoiceCalculations => {
     (sum, item) => sum + calculateLineAmount(item.quantity, item.rate),
     0
   );
-  const taxAmount = subtotal * (invoice.taxRate / 100);
+  const discountPercent = invoice.discountPercent || 0;
+  const discountAmount = subtotal * (discountPercent / 100);
+  const discountedSubtotal = subtotal - discountAmount;
+  const taxAmount = discountedSubtotal * (invoice.taxRate / 100);
   const cautionFee = invoice.cautionFee || 0;
   const handlingFee = invoice.handlingFee || 0;
-  const total = subtotal + taxAmount + cautionFee + handlingFee;
+  const total = discountedSubtotal + taxAmount + cautionFee + handlingFee;
   const balanceDue = total - (invoice.depositReceived || 0);
 
-  return { subtotal, taxAmount, total, balanceDue };
+  return { subtotal, discountAmount, taxAmount, total, balanceDue };
 };
 
 export const generateInvoiceNumber = (): string => {
@@ -65,6 +68,7 @@ export const createNewInvoice = (
       { id: crypto.randomUUID(), description: '', quantity: 1, rate: 0 },
     ],
     taxRate: 7.5,
+    discountPercent: 0,
     cautionFee: 0,
     handlingFee: 0,
     depositReceived: 0,

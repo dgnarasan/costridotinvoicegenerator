@@ -289,6 +289,20 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
         <CardContent className="space-y-4">
 
           <div>
+            <Label htmlFor="discountPercent">Discount (%)</Label>
+            <Input
+              id="discountPercent"
+              type="number"
+              min="0"
+              max="100"
+              step="0.5"
+              value={invoice.discountPercent}
+              onChange={(e) => updateField('discountPercent', parseFloat(e.target.value) || 0)}
+              placeholder="0"
+            />
+          </div>
+
+          <div>
             <Label htmlFor="cautionFee">Caution Fee (NGN)</Label>
             <Input
               id="cautionFee"

@@ -312,6 +312,12 @@ const InvoicePDF = ({ invoice, logoBase64 }: InvoicePDFProps) => {
               <Text style={styles.totalLabel}>Subtotal:</Text>
               <Text style={styles.totalValue}>{formatCurrency(calculations.subtotal)}</Text>
             </View>
+            {invoice.discountPercent > 0 && (
+              <View style={styles.totalRow}>
+                <Text style={{ fontSize: 11, color: '#c0392b' }}>Discount ({invoice.discountPercent}%):</Text>
+                <Text style={{ fontSize: 11, color: '#c0392b', fontWeight: 600 }}>- {formatCurrency(calculations.discountAmount)}</Text>
+              </View>
+            )}
             {invoice.cautionFee > 0 && (
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Caution Fee:</Text>
