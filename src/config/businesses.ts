@@ -39,9 +39,9 @@ const BUSINESS_ACCOUNTS: Record<BusinessId, { accountName: string; bankName: str
     accountNumber: '0017208098',
   },
   urabyjulia: {
-    accountName: 'Costridot International',
-    bankName: 'Kuda Bank',
-    accountNumber: '3003475464',
+    accountName: 'Julia Fagbuaro',
+    bankName: 'Stanbic IBTC',
+    accountNumber: '0026286595',
   },
 };
 
