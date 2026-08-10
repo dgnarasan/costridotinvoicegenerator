@@ -1,7 +1,7 @@
 import { Invoice, LineItem, InvoiceType } from '@/types/invoice';
 import { getDefaultPaymentTerms, getDefaults, formatCurrency, calculateLineAmount } from '@/utils/invoiceUtils';
 import { parseSmartInput } from '@/utils/smartParser';
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -395,4 +395,4 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
   );
 };
 
-export default InvoiceForm;
+export default memo(InvoiceForm);

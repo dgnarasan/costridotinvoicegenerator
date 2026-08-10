@@ -1,11 +1,9 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
-import { PDFDownloadLink } from '@react-pdf/renderer';
+import { useState, useRef, useCallback, useEffect, useDeferredValue, useMemo, lazy, Suspense } from 'react';
 import { Invoice } from '@/types/invoice';
 import { createNewInvoice, saveInvoice, duplicateInvoice } from '@/utils/invoiceUtils';
 import InvoiceForm from '@/components/InvoiceForm';
 import InvoicePreview from '@/components/InvoicePreview';
 import InvoiceHistory from '@/components/InvoiceHistory';
-import InvoicePDF from '@/components/InvoicePDF';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
@@ -18,6 +16,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { BUSINESSES, BusinessId, getBusiness } from '@/config/businesses';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+// Lazy-load heavy PDF components — they're only needed when downloading
+const LazyPDFDownload = lazy(() => import('@/components/LazyPDFDownload'));
 
 const Index = () => {
   const [business, setBusiness] = useState<BusinessId>(
@@ -32,6 +33,10 @@ const Index = () => {
   const previewRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const businessConfig = getBusiness(business);
+
+  // Deferred invoice for the preview — lets typing stay snappy while
+  // the heavy preview component catches up in the background
+  const deferredInvoice = useDeferredValue(invoice);
 
   const handleBusinessChange = (next: BusinessId) => {
     setBusiness(next);
@@ -53,7 +58,7 @@ const Index = () => {
     const timer = setTimeout(() => {
       saveInvoice(invoice);
       setHistoryRefreshKey(prev => prev + 1);
-    }, 800);
+    }, 1500); // Increased debounce to 1.5s to reduce serialization churn
 
     return () => clearTimeout(timer);
   }, [invoice]);
@@ -153,6 +158,32 @@ const Index = () => {
     window.print();
   }, []);
 
+  // Memoize the PDF filename so it doesn't cause re-renders
+  const pdfFileName = useMemo(
+    () => `${businessConfig.filePrefix}_${invoice.invoiceNumber}.pdf`,
+    [businessConfig.filePrefix, invoice.invoiceNumber]
+  );
+
+  // PDF download button — renders the lazy-loaded component
+  const renderPdfButton = (variant: 'desktop' | 'mobile') => {
+    if (!logoBase64) return null;
+    return (
+      <Suspense fallback={
+        <Button variant={variant === 'desktop' ? 'outline' : 'default'} size="sm" disabled>
+          <Download className="h-4 w-4" />
+          {variant === 'desktop' && <span className="ml-2">PDF</span>}
+        </Button>
+      }>
+        <LazyPDFDownload
+          invoice={deferredInvoice}
+          logoBase64={logoBase64}
+          fileName={pdfFileName}
+          variant={variant}
+        />
+      </Suspense>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -202,19 +233,7 @@ const Index = () => {
                 <Save className="h-4 w-4 mr-2" />
                 Save
               </Button>
-              {logoBase64 && (
-                <PDFDownloadLink
-                  document={<InvoicePDF invoice={invoice} logoBase64={logoBase64} />}
-                  fileName={`${businessConfig.filePrefix}_${invoice.invoiceNumber}.pdf`}
-                >
-                  {({ loading }) => (
-                    <Button variant="outline" size="sm" disabled={loading}>
-                      <Download className="h-4 w-4 mr-2" />
-                      {loading ? 'Generating...' : 'PDF'}
-                    </Button>
-                  )}
-                </PDFDownloadLink>
-              )}
+              {renderPdfButton('desktop')}
               <Button variant="default" size="sm" onClick={handlePrint}>
                 <Printer className="h-4 w-4 mr-2" />
                 Print
@@ -249,18 +268,7 @@ const Index = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
               
-              {logoBase64 && (
-                <PDFDownloadLink
-                  document={<InvoicePDF invoice={invoice} logoBase64={logoBase64} />}
-                  fileName={`${businessConfig.filePrefix}_${invoice.invoiceNumber}.pdf`}
-                >
-                  {({ loading }) => (
-                    <Button variant="default" size="sm" disabled={loading}>
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  )}
-                </PDFDownloadLink>
-              )}
+              {renderPdfButton('mobile')}
             </div>
           </div>
         </div>
@@ -297,7 +305,7 @@ const Index = () => {
                 </div>
                 <div className="overflow-x-auto">
                   <div style={{ transform: 'scale(0.42)', transformOrigin: 'top left', width: '210mm' }}>
-                    <InvoicePreview ref={previewRef} invoice={invoice} />
+                    <InvoicePreview ref={previewRef} invoice={deferredInvoice} />
                   </div>
                 </div>
               </div>
@@ -353,7 +361,7 @@ const Index = () => {
                 Live Preview (A4)
               </div>
               <div className="origin-top-left" style={{ transform: 'scale(0.48)', transformOrigin: 'top left' }}>
-                <InvoicePreview ref={previewRef} invoice={invoice} />
+                <InvoicePreview ref={previewRef} invoice={deferredInvoice} />
               </div>
             </div>
           </div>
