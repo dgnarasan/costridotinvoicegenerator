@@ -281,6 +281,43 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
         </CardContent>
       </Card>
 
+      {/* Menu / Service Breakdown */}
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Menu / Service Details</CardTitle>
+          <p className="text-xs text-muted-foreground">Optional — list items included in this order (e.g. food menu, garment details)</p>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            id="menuDescription"
+            value={invoice.menuDescription}
+            onChange={(e) => updateField('menuDescription', e.target.value)}
+            rows={3}
+            placeholder={
+              invoice.business === 'foodwebb'
+                ? 'e.g. Jollof Rice, Fried Rice, Grilled Chicken, Coleslaw, Small Chops, Chapman, Water'
+                : 'e.g. Choir robe (maroon), Stole (gold satin), Cap'
+            }
+          />
+          {invoice.menuDescription.trim() && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {invoice.menuDescription.split(',').map((item, i) => {
+                const trimmed = item.trim();
+                if (!trimmed) return null;
+                return (
+                  <span
+                    key={i}
+                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20"
+                  >
+                    {trimmed}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Totals */}
       <Card>
         <CardHeader className="pb-4">
@@ -288,40 +325,78 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
         </CardHeader>
         <CardContent className="space-y-4">
 
-          <div>
-            <Label htmlFor="discountPercent">Discount (%)</Label>
-            <Input
-              id="discountPercent"
-              type="number"
-              min="0"
-              max="100"
-              step="0.5"
-              value={invoice.discountPercent}
-              onChange={(e) => updateField('discountPercent', parseFloat(e.target.value) || 0)}
-              placeholder="0"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="taxRate">VAT (%)</Label>
+              <Input
+                id="taxRate"
+                type="number"
+                min="0"
+                max="100"
+                step="0.5"
+                value={invoice.taxRate}
+                onChange={(e) => updateField('taxRate', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="discountPercent">Discount (%)</Label>
+              <Input
+                id="discountPercent"
+                type="number"
+                min="0"
+                max="100"
+                step="0.5"
+                value={invoice.discountPercent}
+                onChange={(e) => updateField('discountPercent', parseFloat(e.target.value) || 0)}
+                placeholder="0"
+              />
+            </div>
           </div>
 
-          <div>
-            <Label htmlFor="cautionFee">Caution Fee (NGN)</Label>
-            <Input
-              id="cautionFee"
-              type="number"
-              min="0"
-              value={invoice.cautionFee}
-              onChange={(e) => updateField('cautionFee', parseFloat(e.target.value) || 0)}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="serviceCharge">Service Charge (NGN)</Label>
+              <Input
+                id="serviceCharge"
+                type="number"
+                min="0"
+                value={invoice.serviceCharge}
+                onChange={(e) => updateField('serviceCharge', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="logisticsFee">Logistics (NGN)</Label>
+              <Input
+                id="logisticsFee"
+                type="number"
+                min="0"
+                value={invoice.logisticsFee}
+                onChange={(e) => updateField('logisticsFee', parseFloat(e.target.value) || 0)}
+              />
+            </div>
           </div>
 
-          <div>
-            <Label htmlFor="handlingFee">Handling Fee (NGN)</Label>
-            <Input
-              id="handlingFee"
-              type="number"
-              min="0"
-              value={invoice.handlingFee}
-              onChange={(e) => updateField('handlingFee', parseFloat(e.target.value) || 0)}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="cautionFee">Caution Fee (NGN)</Label>
+              <Input
+                id="cautionFee"
+                type="number"
+                min="0"
+                value={invoice.cautionFee}
+                onChange={(e) => updateField('cautionFee', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="handlingFee">Handling Fee (NGN)</Label>
+              <Input
+                id="handlingFee"
+                type="number"
+                min="0"
+                value={invoice.handlingFee}
+                onChange={(e) => updateField('handlingFee', parseFloat(e.target.value) || 0)}
+              />
+            </div>
           </div>
 
           <div>

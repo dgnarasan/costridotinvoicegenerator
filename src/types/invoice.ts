@@ -22,9 +22,12 @@ export interface Invoice {
   lineItems: LineItem[];
   taxRate: number;
   discountPercent: number;
+  serviceCharge: number;
+  logisticsFee: number;
   cautionFee: number;
   handlingFee: number;
   depositReceived: number;
+  menuDescription: string; // compact food/service menu breakdown
   // Editable terms & account details
   termsText: string;
   notesText: string; // rental only

@@ -305,6 +305,25 @@ const InvoicePDF = ({ invoice, logoBase64 }: InvoicePDFProps) => {
           ))}
         </View>
 
+        {/* Menu / Service Breakdown (compact) */}
+        {invoice.menuDescription && invoice.menuDescription.trim() && (
+          <View style={{
+            marginBottom: 14,
+            paddingVertical: 8,
+            paddingHorizontal: 12,
+            backgroundColor: '#f8f9fa',
+            borderLeftWidth: 3,
+            borderLeftColor: '#ddd',
+          }}>
+            <Text style={{ fontSize: 8, fontWeight: 600, color: '#444', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 }}>
+              Menu / Items Included:
+            </Text>
+            <Text style={{ fontSize: 10, color: '#333', lineHeight: 1.5 }}>
+              {invoice.menuDescription.split(',').map(s => s.trim()).filter(Boolean).join('  •  ')}
+            </Text>
+          </View>
+        )}
+
         {/* Totals Section */}
         <View style={styles.totalsContainer}>
           <View style={styles.totalsBox}>
@@ -316,6 +335,18 @@ const InvoicePDF = ({ invoice, logoBase64 }: InvoicePDFProps) => {
               <View style={styles.totalRow}>
                 <Text style={{ fontSize: 11, color: '#c0392b' }}>Discount ({invoice.discountPercent}%):</Text>
                 <Text style={{ fontSize: 11, color: '#c0392b', fontWeight: 600 }}>- {formatCurrency(calculations.discountAmount)}</Text>
+              </View>
+            )}
+            {invoice.serviceCharge > 0 && (
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Service Charge:</Text>
+                <Text style={styles.totalValue}>{formatCurrency(invoice.serviceCharge)}</Text>
+              </View>
+            )}
+            {invoice.logisticsFee > 0 && (
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Logistics:</Text>
+                <Text style={styles.totalValue}>{formatCurrency(invoice.logisticsFee)}</Text>
               </View>
             )}
             {invoice.cautionFee > 0 && (
@@ -331,7 +362,7 @@ const InvoicePDF = ({ invoice, logoBase64 }: InvoicePDFProps) => {
               </View>
             )}
             <View style={styles.totalRowBorder}>
-              <Text style={styles.totalLabelBold}>Total (inclusive of 7.5% VAT):</Text>
+              <Text style={styles.totalLabelBold}>Total (inclusive of {invoice.taxRate}% VAT):</Text>
               <Text style={styles.totalValueBold}>{formatCurrency(calculations.total)}</Text>
             </View>
             {invoice.depositReceived > 0 && (

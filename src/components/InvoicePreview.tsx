@@ -195,9 +195,30 @@ const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
           </table>
         </div>
 
+        {/* Menu / Service Breakdown (compact) */}
+        {invoice.menuDescription && invoice.menuDescription.trim() && (
+          <div style={{
+            marginBottom: '20px',
+            padding: '10px 14px',
+            backgroundColor: '#f8f9fa',
+            borderLeft: '3px solid #ddd',
+            borderRadius: '0 4px 4px 0',
+            fontSize: '11px',
+            color: '#555',
+            lineHeight: '1.6',
+          }}>
+            <span style={{ fontWeight: 600, color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '9px' }}>
+              Menu / Items Included:
+            </span>
+            <p style={{ marginTop: '4px', color: '#333' }}>
+              {invoice.menuDescription.split(',').map(s => s.trim()).filter(Boolean).join('  •  ')}
+            </p>
+          </div>
+        )}
+
         {/* Totals Section */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '50px' }}>
-          <div style={{ width: '300px' }}>
+          <div style={{ width: '320px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '10px' }}>
               <span style={{ color: '#666' }}>Subtotal:</span>
               <span style={{ color: '#333', fontWeight: 500 }}>{formatCurrency(calculations.subtotal)}</span>
@@ -206,6 +227,18 @@ const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '10px' }}>
                 <span style={{ color: '#c0392b' }}>Discount ({invoice.discountPercent}%):</span>
                 <span style={{ color: '#c0392b', fontWeight: 500 }}>- {formatCurrency(calculations.discountAmount)}</span>
+              </div>
+            )}
+            {invoice.serviceCharge > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '10px' }}>
+                <span style={{ color: '#666' }}>Service Charge:</span>
+                <span style={{ color: '#333', fontWeight: 500 }}>{formatCurrency(invoice.serviceCharge)}</span>
+              </div>
+            )}
+            {invoice.logisticsFee > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '10px' }}>
+                <span style={{ color: '#666' }}>Logistics:</span>
+                <span style={{ color: '#333', fontWeight: 500 }}>{formatCurrency(invoice.logisticsFee)}</span>
               </div>
             )}
             {invoice.cautionFee > 0 && (
@@ -228,7 +261,7 @@ const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
               borderTop: '2px solid #ddd',
               marginBottom: '10px'
             }}>
-              <span style={{ color: '#444', fontWeight: 600 }}>Total (inclusive of 7.5% VAT):</span>
+              <span style={{ color: '#444', fontWeight: 600 }}>Total (inclusive of {invoice.taxRate}% VAT):</span>
               <span style={{ color: '#333', fontWeight: 700 }}>{formatCurrency(calculations.total)}</span>
             </div>
             {invoice.depositReceived > 0 && (
