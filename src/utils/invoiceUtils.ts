@@ -20,15 +20,16 @@ export const calculateInvoice = (invoice: Invoice): InvoiceCalculations => {
   const discountPercent = invoice.discountPercent || 0;
   const discountAmount = subtotal * (discountPercent / 100);
   const discountedSubtotal = subtotal - discountAmount;
+  const serviceChargePercent = invoice.serviceCharge || 0;
+  const serviceChargeAmount = discountedSubtotal * (serviceChargePercent / 100);
   const taxAmount = discountedSubtotal * (invoice.taxRate / 100);
   const cautionFee = invoice.cautionFee || 0;
   const handlingFee = invoice.handlingFee || 0;
-  const serviceCharge = invoice.serviceCharge || 0;
   const logisticsFee = invoice.logisticsFee || 0;
-  const total = discountedSubtotal + taxAmount + cautionFee + handlingFee + serviceCharge + logisticsFee;
+  const total = discountedSubtotal + taxAmount + serviceChargeAmount + cautionFee + handlingFee + logisticsFee;
   const balanceDue = total - (invoice.depositReceived || 0);
 
-  return { subtotal, discountAmount, taxAmount, total, balanceDue };
+  return { subtotal, discountAmount, serviceChargeAmount, taxAmount, total, balanceDue };
 };
 
 export const generateInvoiceNumber = (): string => {

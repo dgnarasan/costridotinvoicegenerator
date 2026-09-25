@@ -339,8 +339,8 @@ const InvoicePDF = ({ invoice, logoBase64 }: InvoicePDFProps) => {
             )}
             {invoice.serviceCharge > 0 && (
               <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Service Charge:</Text>
-                <Text style={styles.totalValue}>{formatCurrency(invoice.serviceCharge)}</Text>
+                <Text style={styles.totalLabel}>Service Charge ({invoice.serviceCharge}%):</Text>
+                <Text style={styles.totalValue}>{formatCurrency(calculations.serviceChargeAmount)}</Text>
               </View>
             )}
             {invoice.logisticsFee > 0 && (

@@ -231,8 +231,8 @@ const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
             )}
             {invoice.serviceCharge > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '10px' }}>
-                <span style={{ color: '#666' }}>Service Charge:</span>
-                <span style={{ color: '#333', fontWeight: 500 }}>{formatCurrency(invoice.serviceCharge)}</span>
+                <span style={{ color: '#666' }}>Service Charge ({invoice.serviceCharge}%):</span>
+                <span style={{ color: '#333', fontWeight: 500 }}>{formatCurrency(calculations.serviceChargeAmount)}</span>
               </div>
             )}
             {invoice.logisticsFee > 0 && (

@@ -41,6 +41,7 @@ export interface Invoice {
 export interface InvoiceCalculations {
   subtotal: number;
   discountAmount: number;
+  serviceChargeAmount: number;
   taxAmount: number;
   total: number;
   balanceDue: number;

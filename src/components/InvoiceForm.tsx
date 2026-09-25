@@ -355,11 +355,13 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="serviceCharge">Service Charge (NGN)</Label>
+              <Label htmlFor="serviceCharge">Service Charge (%)</Label>
               <Input
                 id="serviceCharge"
                 type="number"
                 min="0"
+                max="100"
+                step="0.5"
                 value={invoice.serviceCharge}
                 onChange={(e) => updateField('serviceCharge', parseFloat(e.target.value) || 0)}
               />
