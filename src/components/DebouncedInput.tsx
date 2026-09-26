@@ -13,27 +13,35 @@ interface DebouncedInputProps extends Omit<React.ComponentProps<typeof Input>, '
  * then debounces the onChange callback to the parent. This prevents the
  * entire form tree from re-rendering on every keystroke.
  */
-export const DebouncedInput = memo(({ value, onChange, debounceMs = 150, ...props }: DebouncedInputProps) => {
+export const DebouncedInput = memo(({ value, onChange, debounceMs = 250, ...props }: DebouncedInputProps) => {
   const [localValue, setLocalValue] = useState(String(value));
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const onChangeRef = useRef(onChange);
+  const isTypingRef = useRef(false);
   onChangeRef.current = onChange;
 
-  // Sync from parent when value changes externally (e.g. smart-fill, load invoice)
+  // Sync from parent only when NOT actively typing (e.g. smart-fill, load invoice)
   useEffect(() => {
-    setLocalValue(String(value));
+    if (!isTypingRef.current) {
+      setLocalValue(String(value));
+    }
   }, [value]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const next = e.target.value;
+    isTypingRef.current = true;
     setLocalValue(next);
     clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => onChangeRef.current(next), debounceMs);
+    timerRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+      onChangeRef.current(next);
+    }, debounceMs);
   }, [debounceMs]);
 
   // Flush on blur so we never lose typed data
   const handleBlur = useCallback(() => {
     clearTimeout(timerRef.current);
+    isTypingRef.current = false;
     onChangeRef.current(localValue);
   }, [localValue]);
 
@@ -50,25 +58,33 @@ interface DebouncedTextareaProps extends Omit<React.ComponentProps<typeof Textar
   debounceMs?: number;
 }
 
-export const DebouncedTextarea = memo(({ value, onChange, debounceMs = 150, ...props }: DebouncedTextareaProps) => {
+export const DebouncedTextarea = memo(({ value, onChange, debounceMs = 250, ...props }: DebouncedTextareaProps) => {
   const [localValue, setLocalValue] = useState(value);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const onChangeRef = useRef(onChange);
+  const isTypingRef = useRef(false);
   onChangeRef.current = onChange;
 
   useEffect(() => {
-    setLocalValue(value);
+    if (!isTypingRef.current) {
+      setLocalValue(value);
+    }
   }, [value]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const next = e.target.value;
+    isTypingRef.current = true;
     setLocalValue(next);
     clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => onChangeRef.current(next), debounceMs);
+    timerRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+      onChangeRef.current(next);
+    }, debounceMs);
   }, [debounceMs]);
 
   const handleBlur = useCallback(() => {
     clearTimeout(timerRef.current);
+    isTypingRef.current = false;
     onChangeRef.current(localValue);
   }, [localValue]);
 

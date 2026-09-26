@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, memo } from 'react';
 import { Invoice } from '@/types/invoice';
 import { formatCurrency, calculateInvoice, calculateLineAmount, formatDate } from '@/utils/invoiceUtils';
 import { getBusiness } from '@/config/businesses';
@@ -312,4 +312,4 @@ const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
 
 InvoicePreview.displayName = 'InvoicePreview';
 
-export default InvoicePreview;
+export default memo(InvoicePreview);

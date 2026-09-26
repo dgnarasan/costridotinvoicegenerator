@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect, useDeferredValue, useMemo, lazy, Suspense } from 'react';
+import { useState, useRef, useCallback, useEffect, useDeferredValue, useMemo, useTransition, lazy, Suspense } from 'react';
 import { Invoice } from '@/types/invoice';
 import { createNewInvoice, saveInvoice, duplicateInvoice } from '@/utils/invoiceUtils';
 import InvoiceForm from '@/components/InvoiceForm';
@@ -33,6 +33,15 @@ const Index = () => {
   const previewRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const businessConfig = getBusiness(business);
+  const [, startTransition] = useTransition();
+
+  // Stable callback: wraps setInvoice in startTransition so React treats
+  // invoice updates as low-priority and won't block typing / scrolling.
+  const handleInvoiceChange = useCallback((next: Invoice) => {
+    startTransition(() => {
+      setInvoice(next);
+    });
+  }, [startTransition]);
 
   // Deferred invoice for the preview — lets typing stay snappy while
   // the heavy preview component catches up in the background
@@ -294,7 +303,7 @@ const Index = () => {
             </TabsList>
             
             <TabsContent value="form">
-              <InvoiceForm invoice={invoice} onChange={setInvoice} />
+              <InvoiceForm invoice={invoice} onChange={handleInvoiceChange} />
             </TabsContent>
             
             <TabsContent value="preview">
@@ -339,7 +348,7 @@ const Index = () => {
               </TabsList>
               
               <TabsContent value="form" className="mt-4">
-                <InvoiceForm invoice={invoice} onChange={setInvoice} />
+                <InvoiceForm invoice={invoice} onChange={handleInvoiceChange} />
               </TabsContent>
               
               <TabsContent value="history" className="mt-4">
