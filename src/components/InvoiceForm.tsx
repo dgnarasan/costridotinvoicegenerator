@@ -1,7 +1,7 @@
 import { Invoice, LineItem, InvoiceType } from '@/types/invoice';
 import { getDefaultPaymentTerms, getDefaults, formatCurrency, calculateLineAmount } from '@/utils/invoiceUtils';
 import { parseSmartInput } from '@/utils/smartParser';
-import { useState, memo } from 'react';
+import { useState, memo, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Trash2, Wand2 } from 'lucide-react';
 import { getBusiness } from '@/config/businesses';
+import { DebouncedInput, DebouncedTextarea } from '@/components/DebouncedInput';
 
 interface InvoiceFormProps {
   invoice: Invoice;
@@ -53,9 +54,9 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
     });
   };
 
-  const updateField = <K extends keyof Invoice>(field: K, value: Invoice[K]) => {
+  const updateField = useCallback(<K extends keyof Invoice>(field: K, value: Invoice[K]) => {
     onChange({ ...invoice, [field]: value });
-  };
+  }, [invoice, onChange]);
 
   const updateInvoiceType = (type: InvoiceType) => {
     const defaults = getDefaults(type, invoice.business);
@@ -68,12 +69,12 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
     });
   };
 
-  const updateLineItem = (id: string, field: keyof LineItem, value: string | number) => {
+  const updateLineItem = useCallback((id: string, field: keyof LineItem, value: string | number) => {
     const newItems = invoice.lineItems.map(item =>
       item.id === id ? { ...item, [field]: value } : item
     );
-    updateField('lineItems', newItems);
-  };
+    onChange({ ...invoice, lineItems: newItems });
+  }, [invoice, onChange]);
 
   const addLineItem = () => {
     const newItem: LineItem = {
@@ -142,10 +143,10 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
             </div>
             <div>
               <Label htmlFor="invoiceNumber">Invoice Number</Label>
-              <Input
+              <DebouncedInput
                 id="invoiceNumber"
                 value={invoice.invoiceNumber}
-                onChange={(e) => updateField('invoiceNumber', e.target.value)}
+                onChange={(v) => updateField('invoiceNumber', v)}
               />
             </div>
           </div>
@@ -162,10 +163,10 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
             </div>
             <div>
               <Label htmlFor="paymentTerms">Payment Terms</Label>
-              <Input
+              <DebouncedInput
                 id="paymentTerms"
                 value={invoice.paymentTerms}
-                onChange={(e) => updateField('paymentTerms', e.target.value)}
+                onChange={(v) => updateField('paymentTerms', v)}
               />
             </div>
           </div>
@@ -180,10 +181,10 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
         <CardContent>
           <div>
             <Label htmlFor="senderName">Sender Name</Label>
-            <Input
+            <DebouncedInput
               id="senderName"
               value={invoice.senderName}
-              onChange={(e) => updateField('senderName', e.target.value)}
+              onChange={(v) => updateField('senderName', v)}
             />
           </div>
         </CardContent>
@@ -197,11 +198,11 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
         <CardContent>
           <div>
             <Label htmlFor="billTo">{business.billToLabel}</Label>
-            <Input
+            <DebouncedInput
               id="billTo"
               value={invoice.billTo}
-              onChange={(e) => updateField('billTo', e.target.value)}
-                  placeholder="Enter customer name"
+              onChange={(v) => updateField('billTo', v)}
+              placeholder="Enter customer name"
               required
             />
           </div>
@@ -234,9 +235,9 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
               
               <div>
                 <Label>Description</Label>
-                <Input
+                <DebouncedInput
                   value={item.description}
-                  onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
+                  onChange={(v) => updateLineItem(item.id, 'description', v)}
                   placeholder={business.itemPlaceholder}
                 />
               </div>
@@ -288,10 +289,10 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
           <p className="text-xs text-muted-foreground">Optional — list items included in this order (e.g. food menu, garment details)</p>
         </CardHeader>
         <CardContent>
-          <Textarea
+          <DebouncedTextarea
             id="menuDescription"
             value={invoice.menuDescription}
-            onChange={(e) => updateField('menuDescription', e.target.value)}
+            onChange={(v) => updateField('menuDescription', v)}
             rows={3}
             placeholder={
               invoice.business === 'foodwebb'
@@ -299,7 +300,7 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
                 : 'e.g. Choir robe (maroon), Stole (gold satin), Cap'
             }
           />
-          {invoice.menuDescription.trim() && (
+          {invoice.menuDescription && invoice.menuDescription.trim() && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {invoice.menuDescription.split(',').map((item, i) => {
                 const trimmed = item.trim();
@@ -423,47 +424,47 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
           {invoice.invoiceType === 'rental' && (
             <div>
               <Label htmlFor="notesText">Notes</Label>
-              <Textarea
+              <DebouncedTextarea
                 id="notesText"
                 value={invoice.notesText}
-                onChange={(e) => updateField('notesText', e.target.value)}
+                onChange={(v) => updateField('notesText', v)}
                 rows={2}
               />
             </div>
           )}
           <div>
             <Label htmlFor="termsText">Terms</Label>
-            <Textarea
+            <DebouncedTextarea
               id="termsText"
               value={invoice.termsText}
-              onChange={(e) => updateField('termsText', e.target.value)}
+              onChange={(v) => updateField('termsText', v)}
               rows={3}
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="accountName">Account Name</Label>
-              <Input
+              <DebouncedInput
                 id="accountName"
                 value={invoice.accountName}
-                onChange={(e) => updateField('accountName', e.target.value)}
+                onChange={(v) => updateField('accountName', v)}
               />
             </div>
             <div>
               <Label htmlFor="bankName">Bank Name</Label>
-              <Input
+              <DebouncedInput
                 id="bankName"
                 value={invoice.bankName}
-                onChange={(e) => updateField('bankName', e.target.value)}
+                onChange={(v) => updateField('bankName', v)}
               />
             </div>
           </div>
           <div>
             <Label htmlFor="accountNumber">Account Number</Label>
-            <Input
+            <DebouncedInput
               id="accountNumber"
               value={invoice.accountNumber}
-              onChange={(e) => updateField('accountNumber', e.target.value)}
+              onChange={(v) => updateField('accountNumber', v)}
             />
           </div>
         </CardContent>
