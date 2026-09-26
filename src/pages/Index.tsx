@@ -67,7 +67,7 @@ const Index = () => {
     const timer = setTimeout(() => {
       saveInvoice(invoice);
       setHistoryRefreshKey(prev => prev + 1);
-    }, 1500); // Increased debounce to 1.5s to reduce serialization churn
+    }, 3000); // 3s debounce — localStorage writes are expensive on phone CPUs
 
     return () => clearTimeout(timer);
   }, [invoice]);
@@ -276,8 +276,7 @@ const Index = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              
-              {renderPdfButton('mobile')}
+
             </div>
           </div>
         </div>
@@ -301,34 +300,40 @@ const Index = () => {
                 History
               </TabsTrigger>
             </TabsList>
-            
-            <TabsContent value="form">
-              <InvoiceForm invoice={invoice} onChange={handleInvoiceChange} />
-            </TabsContent>
-            
-            <TabsContent value="preview">
-              <div className="bg-muted rounded-lg p-3 overflow-auto">
-                <div className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+          </Tabs>
+
+          {/* Conditionally render ONLY the active tab — on mobile, keeping
+              all 3 tabs mounted (Preview + History + Form) kills performance
+              because the phone CPU can't handle re-rendering them all. */}
+          {activeTab === 'form' && (
+            <InvoiceForm invoice={invoice} onChange={handleInvoiceChange} />
+          )}
+
+          {activeTab === 'preview' && (
+            <div className="bg-muted rounded-lg p-3 overflow-auto">
+              <div className="text-sm font-medium text-muted-foreground mb-3 flex items-center justify-between">
+                <span className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   Live Preview (A4)
-                </div>
-                <div className="overflow-x-auto">
-                  <div style={{ transform: 'scale(0.42)', transformOrigin: 'top left', width: '210mm' }}>
-                    <InvoicePreview ref={previewRef} invoice={deferredInvoice} />
-                  </div>
+                </span>
+                {renderPdfButton('mobile')}
+              </div>
+              <div className="overflow-x-auto">
+                <div style={{ transform: 'scale(0.42)', transformOrigin: 'top left', width: '210mm' }}>
+                  <InvoicePreview ref={previewRef} invoice={deferredInvoice} />
                 </div>
               </div>
-            </TabsContent>
-            
-            <TabsContent value="history">
-              <InvoiceHistory 
-                onLoad={handleLoadInvoice} 
-                onDuplicate={handleDuplicate}
-                refreshKey={historyRefreshKey}
-                business={business}
-              />
-            </TabsContent>
-          </Tabs>
+            </div>
+          )}
+
+          {activeTab === 'history' && (
+            <InvoiceHistory 
+              onLoad={handleLoadInvoice} 
+              onDuplicate={handleDuplicate}
+              refreshKey={historyRefreshKey}
+              business={business}
+            />
+          )}
         </div>
 
         {/* Desktop: Two Column Layout */}
