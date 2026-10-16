@@ -1,7 +1,7 @@
 import { Invoice, LineItem, InvoiceType } from '@/types/invoice';
 import { getDefaultPaymentTerms, getDefaults, formatCurrency, calculateLineAmount } from '@/utils/invoiceUtils';
 import { parseSmartInput, ParsedInvoiceInput } from '@/utils/smartParser';
-import { parseWithGemini, getStoredGeminiApiKey } from '@/utils/aiParser';
+import { parseWithGemini, getStoredGeminiApiKey, lastGeminiRun } from '@/utils/aiParser';
 import { GeminiApiKeyModal } from '@/components/GeminiApiKeyModal';
 import { useState, memo, useCallback, useMemo, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -31,6 +31,15 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
   useEffect(() => {
     setHasApiKey(Boolean(getStoredGeminiApiKey()));
   }, [keyModalOpen]);
+
+  // Live seconds counter on the AI button while waiting
+  const [aiSeconds, setAiSeconds] = useState(0);
+  useEffect(() => {
+    if (!isAiLoading) return;
+    setAiSeconds(0);
+    const t = setInterval(() => setAiSeconds((s) => s + 1), 1000);
+    return () => clearInterval(t);
+  }, [isAiLoading]);
 
   const applyParsedData = (parsed: ParsedInvoiceInput, source: 'ai' | 'offline') => {
     if (!parsed.billTo && parsed.lineItems.length === 0 && !parsed.menuDescription) {
@@ -75,7 +84,9 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
     parsed.extraCharges?.forEach(c => summaryParts.push(`${c.label}: ₦${c.amount.toLocaleString()}`));
 
     toast({
-      title: source === 'ai' ? '✨ AI Auto-Filled via Gemini Flash' : 'Invoice auto-filled',
+      title: source === 'ai'
+        ? `✨ AI filled in ${lastGeminiRun ? (lastGeminiRun.ms / 1000).toFixed(1) + 's' : ''}`
+        : 'Invoice auto-filled',
       description: (summaryParts.length > 0 ? summaryParts.join(' • ') : 'Invoice successfully updated.') + ' — tap Undo to revert.',
     });
   };
@@ -331,7 +342,7 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
               {isAiLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Gemini AI is parsing...
+                  Gemini is reading… {aiSeconds}s
                 </>
               ) : (
                 <>
