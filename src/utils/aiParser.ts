@@ -22,7 +22,7 @@ export const setStoredGeminiApiKey = (key: string): void => {
 
 const API = 'https://generativelanguage.googleapis.com/v1beta';
 const MODEL_CACHE_KEY = 'gemini_model';
-const REQUEST_TIMEOUT_MS = 25_000;
+const REQUEST_TIMEOUT_MS = 15_000; // per model — if one is stuck, move on to the next
 const FALLBACK_MODELS = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-lite-latest'];
 
 // Structured-output schema: the model is forced to return exactly this shape,
@@ -247,7 +247,6 @@ export const parseWithGemini = async (
       } catch (err: any) {
         if (err.message?.startsWith('API_KEY_INVALID')) throw err;
         if (!bestError) bestError = err;
-        if (err.message?.startsWith('TIMEOUT')) return null;
       }
     }
     return null;
@@ -256,11 +255,12 @@ export const parseWithGemini = async (
   if (cached) {
     const hit = await tryList([cached]);
     if (hit) return hit;
-    if (bestError && /QUOTA|TIMEOUT/.test((bestError as Error).message)) throw bestError;
+    if (bestError && /QUOTA/.test((bestError as Error).message)) throw bestError;
     try { localStorage.removeItem(MODEL_CACHE_KEY); } catch { /* ignore */ }
   }
 
-  const hit = await tryList(await discoverModels(apiKey));
+  const discovered = await discoverModels(apiKey);
+  const hit = await tryList([...discovered, 'gemini-flash-lite-latest', 'gemini-2.5-flash-lite']);
   if (hit) return hit;
 
   throw bestError || new Error('No Gemini Flash model is available for this API key.');

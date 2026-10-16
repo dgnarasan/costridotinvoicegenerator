@@ -166,7 +166,7 @@ const LOGISTICS_LABEL = /\b(?:logistics|delivery|transport|dispatch|waybill|ship
 const SERVICE_CHARGE_LABEL = /\b(?:service\s*charge|service\s*fee|service)\b[^0-9]*([\d.]+)\s*%/i;
 const DISCOUNT_LABEL = /\b(?:discount|off)\b[^0-9]*([\d.]+)\s*%/i;
 // Any other named fee: "Express fee 1m", "Rush charge: 50k", "Setup fee - 20,000"
-const EXTRA_CHARGE = new RegExp(String.raw`^(.{2,40}?\b(?:fee|charge|surcharge|levy|cost))\s*[:\-–=]?\s*(${NUM})\s*\.?$`, 'i');
+const EXTRA_CHARGE = new RegExp(String.raw`^(.{2,40}?\b(?:fees?|charges?|surcharges?|levy|levies|costs?))\s*[:\-–=]?\s*(${NUM})\s*\.?$`, 'i');
 const MENU_LABEL = /^\s*(?:menu|food|menu\s*list|food\s*list|dishes|package\s*items|included\s*items|package)\s*[:\-]\s*(.+)$/i;
 
 const parseDateLoose = (s: string): string | undefined => {
