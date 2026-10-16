@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { BUSINESSES, BusinessId, getBusiness } from '@/config/businesses';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useInvoiceHistory } from '@/hooks/useInvoiceHistory';
+import UndoRedoBar from '@/components/UndoRedoBar';
 
 // Lazy-load heavy PDF components — they're only needed when downloading
 const LazyPDFDownload = lazy(() => import('@/components/LazyPDFDownload'));
@@ -35,25 +37,81 @@ const Index = () => {
   const businessConfig = getBusiness(business);
   const [, startTransition] = useTransition();
 
-  // Stable callback: wraps setInvoice in startTransition so React treats
+  // Stable setter: wraps setInvoice in startTransition so React treats
   // invoice updates as low-priority and won't block typing / scrolling.
-  const handleInvoiceChange = useCallback((next: Invoice) => {
+  const setInvoiceLowPriority = useCallback((next: Invoice) => {
     startTransition(() => {
       setInvoice(next);
     });
   }, [startTransition]);
 
+  // Undo / redo history — every user change goes through history.commit
+  const history = useInvoiceHistory(invoice, setInvoiceLowPriority);
+  const handleInvoiceChange = history.commit;
+
+  const handleUndo = useCallback(() => {
+    const label = history.undo();
+    if (label) toast({ title: 'Undone', description: label });
+  }, [history.undo, toast]);
+
+  const handleRedo = useCallback(() => {
+    const label = history.redo();
+    if (label) toast({ title: 'Redone', description: label });
+  }, [history.redo, toast]);
+
+  const handleRevertTo = useCallback((index: number) => {
+    const label = history.past[index]?.label;
+    history.revertTo(index);
+    toast({ title: 'Reverted', description: label ? `Back to before: ${label}` : undefined });
+  }, [history.revertTo, history.past, toast]);
+
+  // Keyboard shortcuts: Cmd/Ctrl+Z, Cmd+Shift+Z / Ctrl+Y.
+  // Skipped while focused in a text field so the browser's own text undo still works there.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      const key = e.key.toLowerCase();
+      if (key === 'z' && !e.shiftKey) { e.preventDefault(); handleUndo(); }
+      else if ((key === 'z' && e.shiftKey) || key === 'y') { e.preventDefault(); handleRedo(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [handleUndo, handleRedo]);
+
+  const undoBar = (compact: boolean) => (
+    <UndoRedoBar
+      past={history.past}
+      canUndo={history.canUndo}
+      canRedo={history.canRedo}
+      onUndo={handleUndo}
+      onRedo={handleRedo}
+      onRevertTo={handleRevertTo}
+      compact={compact}
+    />
+  );
+
   // Deferred invoice for the preview — lets typing stay snappy while
   // the heavy preview component catches up in the background
   const deferredInvoice = useDeferredValue(invoice);
 
+  // Keep the business selector in sync when undo/redo restores another business's invoice
+  useEffect(() => {
+    if (invoice.business && invoice.business !== business) {
+      setBusiness(invoice.business);
+      localStorage.setItem('activeBusiness', invoice.business);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invoice.business]);
+
   const handleBusinessChange = (next: BusinessId) => {
     setBusiness(next);
     localStorage.setItem('activeBusiness', next);
-    setInvoice(createNewInvoice('production', next));
+    handleInvoiceChange(createNewInvoice('production', next), `Switched to ${getBusiness(next).shortName}`);
     toast({
       title: `Switched to ${getBusiness(next).name}`,
-      description: 'Started a new invoice for this business.',
+      description: 'Started a new invoice for this business. Tap Undo to go back.',
     });
   };
 
@@ -135,7 +193,7 @@ const Index = () => {
   const handleDuplicate = (sourceInvoice?: Invoice) => {
     const toDuplicate = sourceInvoice || invoice;
     const newInvoice = duplicateInvoice(toDuplicate);
-    setInvoice(newInvoice);
+    handleInvoiceChange(newInvoice, 'Duplicate invoice');
     toast({
       title: 'Invoice duplicated',
       description: `Created new invoice #${newInvoice.invoiceNumber}`,
@@ -143,15 +201,15 @@ const Index = () => {
   };
 
   const handleNewInvoice = () => {
-    setInvoice(createNewInvoice('production', business));
+    handleInvoiceChange(createNewInvoice('production', business), 'New invoice');
     toast({
       title: 'New invoice created',
-      description: 'Ready to create a new invoice',
+      description: 'Ready to create a new invoice. Tap Undo to go back.',
     });
   };
 
   const handleLoadInvoice = (loadedInvoice: Invoice) => {
-    setInvoice(loadedInvoice);
+    handleInvoiceChange(loadedInvoice, `Loaded #${loadedInvoice.invoiceNumber}`);
     if (loadedInvoice.business && loadedInvoice.business !== business) {
       setBusiness(loadedInvoice.business);
       localStorage.setItem('activeBusiness', loadedInvoice.business);
@@ -230,6 +288,8 @@ const Index = () => {
             
             {/* Desktop Actions */}
             <div className="hidden lg:flex items-center gap-2">
+              {undoBar(false)}
+              <div className="w-px h-6 bg-border mx-1" />
               <Button variant="outline" size="sm" onClick={handleNewInvoice}>
                 <FileText className="h-4 w-4 mr-2" />
                 New
@@ -250,7 +310,8 @@ const Index = () => {
             </div>
 
             {/* Mobile Actions Dropdown */}
-            <div className="lg:hidden flex items-center gap-2">
+            <div className="lg:hidden flex items-center gap-1.5">
+              {undoBar(true)}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">

@@ -17,7 +17,7 @@ import { DebouncedInput, DebouncedTextarea } from '@/components/DebouncedInput';
 
 interface InvoiceFormProps {
   invoice: Invoice;
-  onChange: (invoice: Invoice) => void;
+  onChange: (invoice: Invoice, actionLabel?: string) => void;
 }
 
 const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
@@ -63,7 +63,7 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
       discountPercent: parsed.discountPercent ?? invoice.discountPercent,
       menuDescription: parsed.menuDescription ?? invoice.menuDescription,
       notesText: parsed.notesText ?? invoice.notesText,
-    });
+    }, source === 'ai' ? 'AI Smart Fill' : 'Quick Fill');
 
     const summaryParts: string[] = [];
     if (parsed.lineItems.length > 0) summaryParts.push(`${parsed.lineItems.length} item(s)`);
@@ -74,7 +74,7 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
 
     toast({
       title: source === 'ai' ? '✨ AI Auto-Filled via Gemini Flash' : 'Invoice auto-filled',
-      description: summaryParts.length > 0 ? summaryParts.join(' • ') : 'Invoice successfully updated.',
+      description: (summaryParts.length > 0 ? summaryParts.join(' • ') : 'Invoice successfully updated.') + ' — tap Undo to revert.',
     });
   };
 

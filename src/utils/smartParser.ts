@@ -39,130 +39,108 @@ export const parseMoney = (raw: string): number => {
 const NUM = String.raw`(?:[₦n#]|ngn)?\s*\d{1,3}(?:[,\d]*\d)?(?:\.\d+)?\s*[km]?`;
 
 // Common catering & fashion item units
-const UNITS = String.raw`(?:pcs?|pieces?|units?|sets?|robes?|items?|plates?|packs?|cartons?|crates?|bowls?|coolers?|trays?|servings?|portions?|dresses?|gowns?|cassocks?|stoles?|yards?|pairs?|guests?|persons?|people)`;
+const UNIT_WORDS = String.raw`pcs?|pieces?|units?|sets?|items?|plates?|packs?|cartons?|crates?|bowls?|coolers?|trays?|servings?|portions?|yards?|pairs?|guests?|persons?|people|bottles?|cans?`;
+const GENERIC_UNIT = new RegExp(String.raw`^(?:${UNIT_WORDS})$`, 'i');
 
-// Quantity-then-rate patterns. E.g.:
+// Words between the quantity and the price, e.g. "choir robes", "plates of jollof rice"
+const MID = String.raw`([^\d\n]{0,60}?)`;
+// A quantity: whole number that is NOT itself a price ("30k") or a percentage
+const QTY = String.raw`\b(\d+)(?![\d.,]*\s*[km]\b)(?![\d.,]*\s*%)`;
+const EACH = String.raw`(?:\s*(?:each|per\s*\w+|\/\s*\w+|a\s+piece|apiece))?`;
+
+// "100 plates jollof rice for 300k total", "50 packs = 250,000 altogether"
+const QTY_TOTAL_RATE = new RegExp(
+  String.raw`${QTY}\s*${MID}\s*(?:for|at|=|costing|:)?\s*(${NUM})\s*(?:total|altogether|all\s*together|in\s+total)\b`,
+  'i'
+);
 // "40pcs x 30k", "40 x 30,000", "100 plates @ 5000", "2 * 1.5m", "40 × 30k"
 const QTY_OP_RATE = new RegExp(
-  String.raw`(\d+)\s*${UNITS}?\s*[x@*×]\s*(${NUM})`,
+  String.raw`${QTY}\s*${MID}\s*[x@*×]\s*(${NUM})${EACH}`,
   'i'
 );
-
-// "40 robes at 30k", "200 plates for 5,000 each", "40 at 30k", "40 @ 30k each"
+// "40 choir robes at 30k each", "200 plates of rice for 5,000 each", "40 at 30k"
 const QTY_AT_RATE = new RegExp(
-  String.raw`(\d+)\s*(?:${UNITS}|of\s+\w+)?\s*(?:at|for|@|=)\s*(${NUM})\s*(?:each|per|\/\s*\w+)?`,
+  String.raw`${QTY}\s*${MID}\s*\b(?:at|for|=)\s*(${NUM})${EACH}`,
   'i'
 );
-
 // "30k each for 40 robes", "5,000 per plate x 100"
 const RATE_QTY = new RegExp(
-  String.raw`(${NUM})\s*(?:each|per\s*\w*|/\s*\w+)\s*(?:for|x|\*|,)?\s*(\d+)`,
+  String.raw`(${NUM})\s*(?:each|per\s*\w*|/\s*\w+)\s*(?:for|x|\*|,)?\s*(\d+)\s*([^\d\n]{0,40})`,
   'i'
 );
-
-// Total price given for multiple items: "100 plates for 300k total", "50 packs = 250,000 altogether"
-const QTY_TOTAL_RATE = new RegExp(
-  String.raw`(\d+)\s*${UNITS}?\s*(?:for|at|=|costing)?\s*(${NUM})\s*(?:total|altogether|in total)`,
-  'i'
-);
-
-// Bare "40 robes 30k" or "100 jollof 5000" — qty word rate (fallback)
+// Bare "40 robes 30k" or "100 jollof 5000" — qty words rate (fallback)
 const QTY_WORDS_RATE = new RegExp(
-  String.raw`\b(\d+)\b\s+([^\d\n]{0,40}?)\s+(${NUM})\b`,
+  String.raw`${QTY}\s+([^\d\n]{0,60}?)\s+(${NUM})\b`,
   'i'
 );
+// Lump-sum service with no quantity: "DJ services 150k", "Hall setup - 200,000"
+const LUMP_SUM = new RegExp(String.raw`^(.+?)\s*[:\-–=]?\s*(${NUM})${EACH}\s*\.?$`, 'i');
 
-const isMoneyToken = (s: string): boolean => /[km]$/i.test(s) || /[,.]/.test(s) || parseFloat(s) >= 100;
+const isMoneyToken = (s: string): boolean => /[km]$/i.test(s.trim()) || /[,.]/.test(s) || parseFloat(s.replace(/[^\d.]/g, '')) >= 100;
 
-const findQtyRate = (
-  line: string
-): { qty: number; rate: number; before: string; after: string; matchedText: string } | null => {
-  // 1) Qty with explicit total indicator: e.g. "100 plates 300k total" -> unit rate = 3,000
+interface QtyRateHit {
+  qty: number;
+  rate: number;
+  mid: string;    // words between qty and price (usually the item name)
+  before: string; // text before the match
+  after: string;  // text after the match
+}
+
+const hitFrom = (line: string, m: RegExpMatchArray, qty: number, rate: number, mid: string): QtyRateHit => ({
+  qty: qty || 1,
+  rate,
+  mid: mid || '',
+  before: line.slice(0, m.index).trim(),
+  after: line.slice((m.index || 0) + m[0].length).trim(),
+});
+
+const findQtyRate = (line: string): QtyRateHit | null => {
+  // 1) Explicit total for many: "100 plates 300k total" -> unit rate 3,000
   let m = line.match(QTY_TOTAL_RATE);
   if (m) {
     const qty = parseInt(m[1], 10) || 1;
-    const totalAmount = parseMoney(m[2]);
-    const rate = qty > 0 ? Math.round(totalAmount / qty) : totalAmount;
-    return {
-      qty,
-      rate,
-      before: line.slice(0, m.index).trim(),
-      after: line.slice((m.index || 0) + m[0].length).trim(),
-      matchedText: m[0],
-    };
+    const total = parseMoney(m[3]);
+    return hitFrom(line, m, qty, qty > 0 ? Math.round(total / qty) : total, m[2]);
   }
-
-  // 2) qty OP rate (40 x 30k)
+  // 2) "40 robes x 30k"
   m = line.match(QTY_OP_RATE);
-  if (m) {
-    return {
-      qty: parseInt(m[1], 10) || 1,
-      rate: parseMoney(m[2]),
-      before: line.slice(0, m.index).trim(),
-      after: line.slice((m.index || 0) + m[0].length).trim(),
-      matchedText: m[0],
-    };
-  }
-
-  // 3) qty AT rate (40 robes at 30k each)
+  if (m) return hitFrom(line, m, parseInt(m[1], 10), parseMoney(m[3]), m[2]);
+  // 3) "40 choir robes at 30k each"
   m = line.match(QTY_AT_RATE);
-  if (m) {
-    return {
-      qty: parseInt(m[1], 10) || 1,
-      rate: parseMoney(m[2]),
-      before: line.slice(0, m.index).trim(),
-      after: line.slice((m.index || 0) + m[0].length).trim(),
-      matchedText: m[0],
-    };
-  }
-
-  // 4) rate each for qty (30k each for 40 robes)
+  if (m) return hitFrom(line, m, parseInt(m[1], 10), parseMoney(m[3]), m[2]);
+  // 4) "30k each for 40 robes"
   m = line.match(RATE_QTY);
-  if (m && isMoneyToken(m[1])) {
-    return {
-      qty: parseInt(m[2], 10) || 1,
-      rate: parseMoney(m[1]),
-      before: line.slice(0, m.index).trim(),
-      after: line.slice((m.index || 0) + m[0].length).trim(),
-      matchedText: m[0],
-    };
-  }
-
-  // 5) loose: qty <words> rate
+  if (m && isMoneyToken(m[1])) return hitFrom(line, m, parseInt(m[2], 10), parseMoney(m[1]), m[3]);
+  // 5) loose "40 robes 30k"
   m = line.match(QTY_WORDS_RATE);
-  if (m && isMoneyToken(m[3])) {
-    return {
-      qty: parseInt(m[1], 10) || 1,
-      rate: parseMoney(m[3]),
-      before: (line.slice(0, m.index).trim() + ' ' + (m[2] || '').trim()).trim(),
-      after: line.slice((m.index || 0) + m[0].length).trim(),
-      matchedText: m[0],
-    };
-  }
-
-  // 6) Single service / lump sum (e.g. "DJ services 50,000" or "Hall setup 200k")
-  const singleMatch = line.match(new RegExp(String.raw`^(.+?)\s*[:\-–]?\s*(${NUM})$`, 'i'));
-  if (singleMatch && isMoneyToken(singleMatch[2])) {
-    const desc = singleMatch[1].trim();
+  if (m && isMoneyToken(m[3])) return hitFrom(line, m, parseInt(m[1], 10), parseMoney(m[3]), m[2]);
+  // 6) lump sum "DJ services 150k"
+  m = line.match(LUMP_SUM);
+  if (m && isMoneyToken(m[2])) {
+    const desc = m[1].trim();
     if (!/^(total|subtotal|balance|deposit|caution|handling|logistics|delivery|tax|vat|discount)\b/i.test(desc)) {
-      return {
-        qty: 1,
-        rate: parseMoney(singleMatch[2]),
-        before: desc,
-        after: '',
-        matchedText: singleMatch[0],
-      };
+      return { qty: 1, rate: parseMoney(m[2]), mid: '', before: desc, after: '' };
     }
   }
-
   return null;
 };
 
 const cleanDesc = (s: string): string =>
   s
     .replace(/^[-–•*:\s\d.)]+/, '') // Strip leading dashes, bullets, numbers e.g. "1.", "-", "•"
-    .replace(/[-–•*:\s]+$/, '')
+    .replace(/^(?:also|and|plus|then|another|additional(?:ly)?|with)\b[\s,]*/i, '') // leading filler words
+    .replace(/[\s,]*\b(?:at|for|of|each|costing|is|are|=|@|x)\s*$/i, '') // dangling connectors
+    .replace(/[-–•*:,.\s]+$/, '')
     .trim();
+
+const capitalize = (s: string): string => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+
+// "First Baptist Church needs choir robes" -> customer + item
+const PRONOUN = /^(?:i|we|they|he|she|you|my\s+\w+|our\s+\w+|the\s+client|client|customer)$/i;
+const NEEDS_SPLIT = /^(.*?)\s+(?:needs?|wants?|would\s+like|ordered|orders?|requested|is\s+requesting|requires?)\s+(.*)$/i;
+
+
+const WHATSAPP_SENDER = /^\[?\d{1,2}[:.]\d{2}[^\]]*\]\s*(?:-\s*)?([^:]{2,40}):/;
 
 const cleanWhatsAppLine = (s: string): string =>
   s
@@ -196,9 +174,18 @@ const parseDateLoose = (s: string): string | undefined => {
 };
 
 export const parseSmartInput = (text: string): ParsedInvoiceInput => {
+  // WhatsApp exports: "[14:22, 16/10/2026] Mrs Bello: message" — remember who sent it
+  const senderCounts = new Map<string, number>();
   const rawLines = text
     .split('\n')
-    .map(l => cleanWhatsAppLine(l.trim()))
+    .map(l => {
+      const sm = l.trim().match(WHATSAPP_SENDER);
+      if (sm) {
+        const name = sm[1].trim();
+        senderCounts.set(name, (senderCounts.get(name) || 0) + 1);
+      }
+      return cleanWhatsAppLine(l.trim());
+    })
     .filter(Boolean);
 
   const result: ParsedInvoiceInput = { lineItems: [] };
@@ -307,11 +294,9 @@ export const parseSmartInput = (text: string): ParsedInvoiceInput => {
   // Second pass: line items and customer fallback
   let pendingDesc = '';
   const pushItem = (description: string, quantity: number, rate: number) => {
-    const desc = cleanDesc(description);
-    if (!desc) return;
     result.lineItems.push({
       id: crypto.randomUUID(),
-      description: desc,
+      description: capitalize(cleanDesc(description)) || 'Item',
       quantity,
       rate,
     });
@@ -320,7 +305,21 @@ export const parseSmartInput = (text: string): ParsedInvoiceInput => {
   for (const line of lines) {
     const hit = findQtyRate(line);
     if (hit) {
-      const desc = cleanDesc(hit.before) || pendingDesc || cleanDesc(hit.after) || '';
+      let before = cleanDesc(hit.before);
+      // "First Baptist Church needs 40 robes…" -> customer = First Baptist Church
+      const split = before.match(NEEDS_SPLIT) || `${before} `.match(/^(.*?)\s+(?:needs?|wants?|ordered|requires?)\s*$/i);
+      if (split) {
+        const who = cleanDesc(split[1]);
+        if (!result.billTo && who && !PRONOUN.test(who)) result.billTo = who;
+        before = cleanDesc(split[2] || '');
+      }
+      const mid = cleanDesc(hit.mid);
+      const midIsName = mid && !GENERIC_UNIT.test(mid);
+      const desc =
+        (midIsName ? [before, mid].filter(Boolean).join(' ') : before) ||
+        pendingDesc ||
+        cleanDesc(hit.after) ||
+        mid; // e.g. just "plates" — better than nothing
       pushItem(desc, hit.qty, hit.rate);
       pendingDesc = '';
       continue;
@@ -334,6 +333,11 @@ export const parseSmartInput = (text: string): ParsedInvoiceInput => {
 
     // Save as a pending description for the next qty/rate line
     pendingDesc = pendingDesc ? `${pendingDesc} ${line}` : line;
+  }
+
+  // Fall back to the WhatsApp sender as the customer
+  if (!result.billTo && senderCounts.size > 0) {
+    result.billTo = [...senderCounts.entries()].sort((a, b) => b[1] - a[1])[0][0];
   }
 
   // Trailing pending description with no rate — only push if we have no items yet
