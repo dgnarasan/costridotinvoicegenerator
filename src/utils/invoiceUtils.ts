@@ -26,10 +26,11 @@ export const calculateInvoice = (invoice: Invoice): InvoiceCalculations => {
   const cautionFee = invoice.cautionFee || 0;
   const handlingFee = invoice.handlingFee || 0;
   const logisticsFee = invoice.logisticsFee || 0;
-  const total = discountedSubtotal + taxAmount + serviceChargeAmount + cautionFee + handlingFee + logisticsFee;
+  const extraChargesTotal = (invoice.extraCharges || []).reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
+  const total = discountedSubtotal + taxAmount + serviceChargeAmount + cautionFee + handlingFee + logisticsFee + extraChargesTotal;
   const balanceDue = total - (invoice.depositReceived || 0);
 
-  return { subtotal, discountAmount, serviceChargeAmount, taxAmount, total, balanceDue };
+  return { subtotal, discountAmount, serviceChargeAmount, taxAmount, extraChargesTotal, total, balanceDue };
 };
 
 export const generateInvoiceNumber = (): string => {
@@ -77,6 +78,7 @@ export const createNewInvoice = (
     cautionFee: 0,
     handlingFee: 0,
     depositReceived: 0,
+    extraCharges: [],
     menuDescription: '',
     ...defaults,
     createdAt: new Date().toISOString(),
@@ -95,6 +97,7 @@ export const duplicateInvoice = (invoice: Invoice): Invoice => {
       ...item,
       id: crypto.randomUUID(),
     })),
+    extraCharges: (invoice.extraCharges || []).map(c => ({ ...c, id: crypto.randomUUID() })),
   };
 };
 

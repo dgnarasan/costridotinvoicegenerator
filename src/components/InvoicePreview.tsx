@@ -241,6 +241,12 @@ const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
                 <span style={{ color: '#333', fontWeight: 500 }}>{formatCurrency(invoice.logisticsFee)}</span>
               </div>
             )}
+            {(invoice.extraCharges || []).filter(c => c.amount > 0).map(c => (
+              <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '10px' }}>
+                <span style={{ color: '#666' }}>{c.label || 'Other Charge'}:</span>
+                <span style={{ color: '#333', fontWeight: 500 }}>{formatCurrency(c.amount)}</span>
+              </div>
+            ))}
             {invoice.cautionFee > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '10px' }}>
                 <span style={{ color: '#666' }}>Caution Fee:</span>

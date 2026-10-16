@@ -349,6 +349,12 @@ const InvoicePDF = ({ invoice, logoBase64 }: InvoicePDFProps) => {
                 <Text style={styles.totalValue}>{formatCurrency(invoice.logisticsFee)}</Text>
               </View>
             )}
+            {(invoice.extraCharges || []).filter(c => c.amount > 0).map(c => (
+              <View key={c.id} style={styles.totalRow}>
+                <Text style={styles.totalLabel}>{c.label || 'Other Charge'}:</Text>
+                <Text style={styles.totalValue}>{formatCurrency(c.amount)}</Text>
+              </View>
+            ))}
             {invoice.cautionFee > 0 && (
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Caution Fee:</Text>

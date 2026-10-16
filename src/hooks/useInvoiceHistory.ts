@@ -30,6 +30,7 @@ const FIELD_LABELS: Partial<Record<keyof Invoice, string>> = {
   accountName: 'Account name',
   bankName: 'Bank',
   accountNumber: 'Account number',
+  extraCharges: 'Other charges',
 };
 
 /** Human-readable summary of what changed, or null if nothing did. */
@@ -42,7 +43,12 @@ const describeChange = (prev: Invoice, next: Invoice): string | null => {
     changed.push(diff > 0 ? 'Added item' : diff < 0 ? 'Removed item' : 'Line items');
   }
   (Object.keys(FIELD_LABELS) as (keyof Invoice)[]).forEach((k) => {
-    if (prev[k] !== next[k]) changed.push(FIELD_LABELS[k]!);
+    const a = prev[k];
+    const b = next[k];
+    const differs = Array.isArray(a) || Array.isArray(b)
+      ? JSON.stringify(a ?? []) !== JSON.stringify(b ?? [])
+      : a !== b;
+    if (differs) changed.push(FIELD_LABELS[k]!);
   });
 
   if (changed.length === 0) return null;

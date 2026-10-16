@@ -17,159 +17,95 @@ export const setStoredGeminiApiKey = (key: string): void => {
   } else {
     localStorage.removeItem('gemini_api_key');
   }
+  localStorage.removeItem(MODEL_CACHE_KEY); // new key may have access to different models
 };
 
-export const parseWithGemini = async (
-  text: string,
-  businessId: BusinessId = 'costridot',
-  apiKeyOverride?: string
-): Promise<ParsedInvoiceInput> => {
-  const apiKey = (apiKeyOverride || getStoredGeminiApiKey()).trim();
-  if (!apiKey) {
-    throw new Error('NO_API_KEY');
-  }
-
-  const business = getBusiness(businessId);
-
-  const prompt = `You are an expert invoice data extractor for a Nigerian business: "${business.name}" (${business.tagline}).
-The user will provide rough notes, a customer message, an email, or a WhatsApp chat log.
-
-Your job is to accurately extract all invoice details into a structured JSON object.
-
-Output Schema:
-{
-  "billTo": "string (customer name, church name, event name, or client name)",
-  "date": "string (YYYY-MM-DD if mentioned, otherwise omit)",
-  "invoiceType": "production" | "rental" (detect if this is equipment rental/hire or custom production/catering/tailoring),
-  "lineItems": [
-    {
-      "description": "string (clear name of item or service)",
-      "quantity": 1,
-      "rate": 0 (UNIT price in Nigerian Naira NGN. If a TOTAL price was given for a quantity > 1, divide total by quantity to get the single unit rate!)
-    }
-  ],
-  "depositReceived": 0 (amount already paid or deposited in NGN),
-  "logisticsFee": 0 (delivery fee, transport, dispatch, waybill in NGN),
-  "serviceCharge": 0 (service charge percentage, e.g. 10 for 10%),
-  "taxRate": 7.5 (VAT percentage: set to 0 if text mentions 'no vat' or 'exempt', 7.5 if VAT is requested),
-  "discountPercent": 0 (discount percentage, e.g. 5 for 5%),
-  "cautionFee": 0 (caution or refundable damage deposit in NGN),
-  "handlingFee": 0 (handling fee in NGN),
-  "menuDescription": "string (if food dishes or garment pieces are listed as a package breakdown separate from billed items, provide a comma-separated list e.g. 'Jollof Rice, Fried Rice, Grilled Chicken, Coleslaw, Chapman')",
-  "paymentTerms": "string (optional specific payment terms if stated)",
-  "notesText": "string (optional rental notes or special delivery instructions)"
-}
-
-Parsing Rules:
-1. Understand Nigerian number conventions:
-   - "30k" = 30000
-   - "1.5m" = 1500000
-   - "#50,000" or "N50,000" or "₦50k" = 50000
-2. If given a TOTAL amount for multiple items (e.g. "100 plates jollof rice for 300k total" or "40 robes = 1,200,000"), divide total by quantity to find unit rate (300k / 100 = 3000).
-3. If an item or service has no explicit quantity (e.g. "DJ & sound setup 150k" or "Hall draping 300,000"), set quantity = 1 and rate = 150000.
-4. Clean messy WhatsApp messages: ignore timestamps (e.g. [14:22, 16/10/2026]), sender headers, and voice note markers.
-5. If dishes or items are listed as a package (especially for Foodwebb Catering), extract them into menuDescription.
-6. Only return valid JSON matching the schema without markdown codeblocks or explanation.`;
-
-  const candidates = await getCandidateModels(apiKey);
-  let bestError: Error | null = null; // most informative error (non-404)
-  let notFoundError: Error | null = null;
-
-  for (const model of candidates) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                { text: `${prompt}\n\nUser input to parse:\n\"\"\"\n${text}\n\"\"\"` }
-              ]
-            }
-          ],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            temperature: 0.1,
-          }
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        const errMsg: string = errorData?.error?.message || response.statusText;
-        if (isKeyError(response.status, errMsg)) {
-          throw new Error(`API_KEY_INVALID: ${errMsg}`);
-        }
-        if (response.status === 404) {
-          notFoundError = new Error(`Gemini error (${model}): ${errMsg}`);
-          continue; // model retired / unavailable — try next
-        }
-        if (response.status === 429) {
-          throw new Error(`QUOTA: Gemini free-tier limit reached on ${model}. Wait a minute and try again, or use Quick Fill.`);
-        }
-        throw new Error(`Gemini error (${model}, ${response.status}): ${errMsg}`);
-      }
-
-      const data = await response.json();
-      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!rawText) {
-        throw new Error('Empty response from AI model');
-      }
-
-      // Parse JSON (strip any accidental backticks if present)
-      const cleanJson = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
-      const parsed = JSON.parse(cleanJson) as ParsedInvoiceInput;
-
-      // Ensure line items have valid IDs and numbers
-      if (Array.isArray(parsed.lineItems)) {
-        parsed.lineItems = parsed.lineItems
-          .filter(item => item && (item.description || item.rate))
-          .map(item => ({
-            id: crypto.randomUUID(),
-            description: item.description?.trim() || 'Item',
-            quantity: Math.max(1, Number(item.quantity) || 1),
-            rate: Math.max(0, Number(item.rate) || 0),
-          }));
-      } else {
-        parsed.lineItems = [];
-      }
-
-      // Sanitize numeric fields
-      if (parsed.depositReceived !== undefined) parsed.depositReceived = Number(parsed.depositReceived) || 0;
-      if (parsed.logisticsFee !== undefined) parsed.logisticsFee = Number(parsed.logisticsFee) || 0;
-      if (parsed.serviceCharge !== undefined) parsed.serviceCharge = Number(parsed.serviceCharge) || 0;
-      if (parsed.taxRate !== undefined) parsed.taxRate = Number(parsed.taxRate) || 0;
-      if (parsed.discountPercent !== undefined) parsed.discountPercent = Number(parsed.discountPercent) || 0;
-      if (parsed.cautionFee !== undefined) parsed.cautionFee = Number(parsed.cautionFee) || 0;
-      if (parsed.handlingFee !== undefined) parsed.handlingFee = Number(parsed.handlingFee) || 0;
-
-      // Remember the model that worked so next time it's tried first
-      try { localStorage.setItem(MODEL_CACHE_KEY, model); } catch { /* ignore */ }
-
-      return parsed;
-    } catch (err: any) {
-      if (err.message?.startsWith('API_KEY_INVALID')) {
-        throw err;
-      }
-      if (!bestError) bestError = err;
-    }
-  }
-
-  throw bestError || notFoundError || new Error('No Gemini Flash model is available for this API key.');
-};
-
+const API = 'https://generativelanguage.googleapis.com/v1beta';
 const MODEL_CACHE_KEY = 'gemini_model';
+const REQUEST_TIMEOUT_MS = 25_000;
 const FALLBACK_MODELS = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-lite-latest'];
 
+// Structured-output schema: the model is forced to return exactly this shape,
+// which is faster and more reliable than describing JSON in the prompt.
+const RESPONSE_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    billTo: { type: 'STRING' },
+    date: { type: 'STRING', description: 'YYYY-MM-DD, only if mentioned' },
+    invoiceType: { type: 'STRING', enum: ['production', 'rental'] },
+    lineItems: {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        properties: {
+          description: { type: 'STRING' },
+          quantity: { type: 'NUMBER' },
+          rate: { type: 'NUMBER', description: 'UNIT price in NGN' },
+        },
+        required: ['description', 'quantity', 'rate'],
+      },
+    },
+    depositReceived: { type: 'NUMBER' },
+    logisticsFee: { type: 'NUMBER' },
+    serviceCharge: { type: 'NUMBER', description: 'percent' },
+    taxRate: { type: 'NUMBER', description: 'VAT percent' },
+    discountPercent: { type: 'NUMBER' },
+    cautionFee: { type: 'NUMBER' },
+    handlingFee: { type: 'NUMBER' },
+    extraCharges: {
+      type: 'ARRAY',
+      description: 'Any other flat fee that does not fit the fields above, e.g. Express fee, Rush fee, Setup fee, Branding fee',
+      items: {
+        type: 'OBJECT',
+        properties: {
+          label: { type: 'STRING' },
+          amount: { type: 'NUMBER' },
+        },
+        required: ['label', 'amount'],
+      },
+    },
+    menuDescription: { type: 'STRING' },
+    paymentTerms: { type: 'STRING' },
+    notesText: { type: 'STRING' },
+  },
+  required: ['lineItems'],
+};
+
+const buildPrompt = (businessName: string, tagline: string) =>
+  `Extract invoice data for "${businessName}" (${tagline}), a Nigerian business, from the user's notes or WhatsApp chat.
+Rules:
+- Money: 30k=30000, 1.5m=1500000, #/N/₦ = Naira.
+- rate is the UNIT price. If a total is given for a quantity ("100 plates for 300k total"), rate = total/quantity.
+- No quantity given => quantity 1.
+- Delivery/transport/dispatch => logisticsFee. Service charge % => serviceCharge. "No VAT" => taxRate 0; "plus VAT" => 7.5.
+- Any other flat fee/charge (express, rush, setup, branding, packaging, overtime, etc.) => extraCharges with a short Title Case label. Never put fees into lineItems.
+- Dishes/garments listed as what's included in a package => menuDescription as a comma-separated list.
+- Ignore WhatsApp timestamps and sender headers. Omit fields that aren't mentioned.`;
+
+// Newer Gemini models "think" before answering by default — great for hard reasoning,
+// but it adds many seconds for a simple extraction like this. Turn it off / to minimum.
+// Options are tried in order; if a model rejects one, the next is used.
+const thinkingOptionsFor = (model: string): (Record<string, unknown> | undefined)[] => {
+  if (/gemini-2\.5/.test(model)) return [{ thinkingBudget: 0 }, undefined];
+  if (/gemini-2\.0|gemini-1/.test(model)) return [undefined]; // these don't think
+  return [{ thinkingLevel: 'minimal' }, { thinkingLevel: 'low' }, { thinkingBudget: 0 }, undefined];
+};
+
 const isKeyError = (status: number, msg: string): boolean =>
-  status === 401 ||
-  status === 403 ||
-  (status === 400 && /api[\s_-]?key/i.test(msg));
+  status === 401 || status === 403 || (status === 400 && /api[\s_-]?key/i.test(msg));
+
+const fetchWithTimeout = async (url: string, init: RequestInit = {}) => {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: ctrl.signal });
+  } catch (err: any) {
+    if (err?.name === 'AbortError') throw new Error('TIMEOUT: Gemini took too long to respond. Try again or use Quick Fill.');
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+};
 
 // Rank flash models: "-latest" alias first, then newest version, stable before preview, full before lite
 const rankModel = (name: string): number => {
@@ -182,26 +118,18 @@ const rankModel = (name: string): number => {
   return score;
 };
 
-// Ask Google which models this key can actually use, so retired model names never break the app
-const getCandidateModels = async (apiKey: string): Promise<string[]> => {
-  let cached: string | null = null;
-  try { cached = localStorage.getItem(MODEL_CACHE_KEY); } catch { /* ignore */ }
-
-  let discovered: string[] = [];
+/** Ask Google which Flash models this key can use (only done when we don't have a cached working model). */
+const discoverModels = async (apiKey: string): Promise<string[]> => {
   try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000&key=${encodeURIComponent(apiKey)}`
-    );
+    const res = await fetchWithTimeout(`${API}/models?pageSize=1000&key=${encodeURIComponent(apiKey)}`);
     if (res.ok) {
       const data = await res.json();
-      discovered = (data?.models || [])
-        .filter((m: any) =>
-          Array.isArray(m.supportedGenerationMethods) &&
-          m.supportedGenerationMethods.includes('generateContent')
-        )
+      const found: string[] = (data?.models || [])
+        .filter((m: any) => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
         .map((m: any) => String(m.name).replace(/^models\//, ''))
         .filter((n: string) => /flash/i.test(n) && !/image|tts|audio|live|embedding|thinking/i.test(n))
         .sort((a: string, b: string) => rankModel(b) - rankModel(a));
+      if (found.length) return found.slice(0, 5);
     } else {
       const errData = await res.json().catch(() => null);
       const msg = errData?.error?.message || res.statusText;
@@ -209,12 +137,131 @@ const getCandidateModels = async (apiKey: string): Promise<string[]> => {
     }
   } catch (err: any) {
     if (err.message?.startsWith('API_KEY_INVALID')) throw err;
-    // network issue listing models — fall through to static list
+  }
+  return FALLBACK_MODELS;
+};
+
+type Attempt = { ok: true; parsed: ParsedInvoiceInput } | { ok: false; status: number; error: Error };
+
+const callModel = async (model: string, apiKey: string, prompt: string, text: string, optionIndex = 0): Promise<Attempt> => {
+  const options = thinkingOptionsFor(model);
+  const thinkingConfig = options[optionIndex];
+  const res = await fetchWithTimeout(`${API}/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: prompt }] },
+      contents: [{ role: 'user', parts: [{ text }] }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        responseSchema: RESPONSE_SCHEMA,
+        temperature: 0,
+        maxOutputTokens: 2048,
+        ...(thinkingConfig ? { thinkingConfig } : {}),
+      },
+    }),
+  });
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => null);
+    const msg: string = errData?.error?.message || res.statusText;
+    if (isKeyError(res.status, msg)) throw new Error(`API_KEY_INVALID: ${msg}`);
+    // This model doesn't accept that "think less" setting — try the next option
+    if (res.status === 400 && thinkingConfig && /think/i.test(msg) && optionIndex + 1 < options.length) {
+      return callModel(model, apiKey, prompt, text, optionIndex + 1);
+    }
+    if (res.status === 429) {
+      return { ok: false, status: 429, error: new Error(`QUOTA: Gemini free-tier limit reached on ${model}. Wait a minute and try again, or use Quick Fill.`) };
+    }
+    return { ok: false, status: res.status, error: new Error(`Gemini error (${model}, ${res.status}): ${msg}`) };
   }
 
-  const ordered = [
-    ...(cached ? [cached] : []),
-    ...(discovered.length ? discovered : FALLBACK_MODELS),
-  ];
-  return Array.from(new Set(ordered)).slice(0, 6);
+  const data = await res.json();
+  const rawText: string | undefined = data?.candidates?.[0]?.content?.parts?.find((p: any) => typeof p.text === 'string')?.text;
+  if (!rawText) return { ok: false, status: 500, error: new Error('Empty response from AI model') };
+  const cleanJson = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+  return { ok: true, parsed: sanitize(JSON.parse(cleanJson)) };
+};
+
+const num = (v: unknown): number | undefined => (v === undefined || v === null ? undefined : Number(v) || 0);
+
+const sanitize = (raw: any): ParsedInvoiceInput => {
+  const parsed: ParsedInvoiceInput = { ...raw };
+  parsed.lineItems = Array.isArray(raw.lineItems)
+    ? raw.lineItems
+        .filter((item: any) => item && (item.description || item.rate))
+        .map((item: any) => ({
+          id: crypto.randomUUID(),
+          description: String(item.description || 'Item').trim(),
+          quantity: Math.max(1, Number(item.quantity) || 1),
+          rate: Math.max(0, Number(item.rate) || 0),
+        }))
+    : [];
+  parsed.extraCharges = Array.isArray(raw.extraCharges)
+    ? raw.extraCharges
+        .filter((c: any) => c && c.label && Number(c.amount) > 0)
+        .map((c: any) => ({ id: crypto.randomUUID(), label: String(c.label).trim(), amount: Number(c.amount) }))
+    : undefined;
+  if (parsed.extraCharges && parsed.extraCharges.length === 0) delete parsed.extraCharges;
+  parsed.depositReceived = num(raw.depositReceived);
+  parsed.logisticsFee = num(raw.logisticsFee);
+  parsed.serviceCharge = num(raw.serviceCharge);
+  parsed.taxRate = num(raw.taxRate);
+  parsed.discountPercent = num(raw.discountPercent);
+  parsed.cautionFee = num(raw.cautionFee);
+  parsed.handlingFee = num(raw.handlingFee);
+  return parsed;
+};
+
+export const parseWithGemini = async (
+  text: string,
+  businessId: BusinessId = 'costridot',
+  apiKeyOverride?: string
+): Promise<ParsedInvoiceInput> => {
+  const apiKey = (apiKeyOverride || getStoredGeminiApiKey()).trim();
+  if (!apiKey) throw new Error('NO_API_KEY');
+
+  const business = getBusiness(businessId);
+  const prompt = buildPrompt(business.name, business.tagline);
+
+  // Fast path: reuse the model that worked last time (one network request total)
+  let cached: string | null = null;
+  try { cached = localStorage.getItem(MODEL_CACHE_KEY); } catch { /* ignore */ }
+
+  let bestError: Error | null = null;
+  const tried = new Set<string>();
+
+  const tryList = async (models: string[]): Promise<ParsedInvoiceInput | null> => {
+    for (const model of models) {
+      if (tried.has(model)) continue;
+      tried.add(model);
+      try {
+        const result = await callModel(model, apiKey, prompt, text);
+        if (result.ok) {
+          try { localStorage.setItem(MODEL_CACHE_KEY, model); } catch { /* ignore */ }
+          return result.parsed;
+        }
+        const fail = result as Extract<Attempt, { ok: false }>;
+        if (fail.status !== 404 && !bestError) bestError = fail.error;
+        if (fail.status === 429) return null; // quota is per-key; other models will likely fail too
+      } catch (err: any) {
+        if (err.message?.startsWith('API_KEY_INVALID')) throw err;
+        if (!bestError) bestError = err;
+        if (err.message?.startsWith('TIMEOUT')) return null;
+      }
+    }
+    return null;
+  };
+
+  if (cached) {
+    const hit = await tryList([cached]);
+    if (hit) return hit;
+    if (bestError && /QUOTA|TIMEOUT/.test((bestError as Error).message)) throw bestError;
+    try { localStorage.removeItem(MODEL_CACHE_KEY); } catch { /* ignore */ }
+  }
+
+  const hit = await tryList(await discoverModels(apiKey));
+  if (hit) return hit;
+
+  throw bestError || new Error('No Gemini Flash model is available for this API key.');
 };

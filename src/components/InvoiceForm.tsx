@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Trash2, Wand2, Sparkles, Key, Loader2, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Wand2, Sparkles, Key, Loader2, CheckCircle2, Receipt } from 'lucide-react';
 import { getBusiness } from '@/config/businesses';
 import { DebouncedInput, DebouncedTextarea } from '@/components/DebouncedInput';
 
@@ -63,6 +63,7 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
       discountPercent: parsed.discountPercent ?? invoice.discountPercent,
       menuDescription: parsed.menuDescription ?? invoice.menuDescription,
       notesText: parsed.notesText ?? invoice.notesText,
+      extraCharges: parsed.extraCharges ?? invoice.extraCharges ?? [],
     }, source === 'ai' ? 'AI Smart Fill' : 'Quick Fill');
 
     const summaryParts: string[] = [];
@@ -71,6 +72,7 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
     if (parsed.logisticsFee) summaryParts.push(`Logistics: ₦${parsed.logisticsFee.toLocaleString()}`);
     if (parsed.serviceCharge) summaryParts.push(`Service: ${parsed.serviceCharge}%`);
     if (parsed.menuDescription) summaryParts.push(`Menu added`);
+    parsed.extraCharges?.forEach(c => summaryParts.push(`${c.label}: ₦${c.amount.toLocaleString()}`));
 
     toast({
       title: source === 'ai' ? '✨ AI Auto-Filled via Gemini Flash' : 'Invoice auto-filled',
@@ -146,7 +148,8 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
         p.discountPercent ||
         p.depositReceived ||
         p.cautionFee ||
-        p.menuDescription
+        p.menuDescription ||
+        (p.extraCharges && p.extraCharges.length > 0)
       );
       return hasAny ? p : null;
     } catch {
@@ -190,6 +193,21 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
     if (invoice.lineItems.length > 1) {
       updateField('lineItems', invoice.lineItems.filter(item => item.id !== id));
     }
+  };
+
+  const addExtraCharge = () => {
+    updateField('extraCharges', [...(invoice.extraCharges || []), { id: crypto.randomUUID(), label: '', amount: 0 }]);
+  };
+
+  const updateExtraCharge = useCallback((id: string, field: 'label' | 'amount', value: string | number) => {
+    onChange({
+      ...invoice,
+      extraCharges: (invoice.extraCharges || []).map(c => (c.id === id ? { ...c, [field]: value } : c)),
+    });
+  }, [invoice, onChange]);
+
+  const removeExtraCharge = (id: string) => {
+    updateField('extraCharges', (invoice.extraCharges || []).filter(c => c.id !== id));
   };
 
   return (
@@ -283,6 +301,11 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
                     ✂️ Discount: {livePreview.discountPercent}%
                   </span>
                 ) : null}
+                {livePreview.extraCharges?.map(c => (
+                  <span key={c.id} className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                    🧾 {c.label}: ₦{c.amount.toLocaleString()}
+                  </span>
+                ))}
                 {livePreview.depositReceived ? (
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">
                     💳 Deposit: ₦{livePreview.depositReceived.toLocaleString()}
@@ -612,6 +635,50 @@ const InvoiceForm = ({ invoice, onChange }: InvoiceFormProps) => {
                 onChange={(e) => updateField('handlingFee', parseFloat(e.target.value) || 0)}
               />
             </div>
+          </div>
+
+          {/* Other / custom charges — for fees that don't have their own slot */}
+          <div className="space-y-2 rounded-lg border border-dashed border-border p-3">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-1.5">
+                <Receipt className="h-3.5 w-3.5" />
+                Other Charges
+              </Label>
+              <span className="text-[11px] text-muted-foreground">e.g. Express fee, Setup fee</span>
+            </div>
+            {(invoice.extraCharges || []).map((charge) => (
+              <div key={charge.id} className="flex items-center gap-2">
+                <DebouncedInput
+                  aria-label="Charge name"
+                  value={charge.label}
+                  onChange={(v) => updateExtraCharge(charge.id, 'label', v)}
+                  placeholder="Charge name"
+                  className="flex-1 min-w-0"
+                />
+                <Input
+                  aria-label="Charge amount (NGN)"
+                  type="number"
+                  min="0"
+                  value={charge.amount}
+                  onChange={(e) => updateExtraCharge(charge.id, 'amount', parseFloat(e.target.value) || 0)}
+                  className="w-32"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeExtraCharge(charge.id)}
+                  className="text-destructive hover:text-destructive px-2"
+                  aria-label="Remove charge"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            <Button id="add-extra-charge" type="button" variant="outline" size="sm" onClick={addExtraCharge} className="w-full">
+              <Plus className="h-4 w-4 mr-1.5" />
+              Add charge
+            </Button>
           </div>
 
           <div>

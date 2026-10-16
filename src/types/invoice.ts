@@ -10,6 +10,13 @@ export interface LineItem {
   rate: number;
 }
 
+/** A custom flat fee with its own label, e.g. "Express Fee" — for charges that have no dedicated slot. */
+export interface ExtraCharge {
+  id: string;
+  label: string;
+  amount: number;
+}
+
 export interface Invoice {
   id: string;
   invoiceNumber: string;
@@ -27,6 +34,7 @@ export interface Invoice {
   cautionFee: number;
   handlingFee: number;
   depositReceived: number;
+  extraCharges?: ExtraCharge[]; // optional so older saved invoices still load
   menuDescription: string; // compact food/service menu breakdown
   // Editable terms & account details
   termsText: string;
@@ -43,6 +51,7 @@ export interface InvoiceCalculations {
   discountAmount: number;
   serviceChargeAmount: number;
   taxAmount: number;
+  extraChargesTotal: number;
   total: number;
   balanceDue: number;
 }
