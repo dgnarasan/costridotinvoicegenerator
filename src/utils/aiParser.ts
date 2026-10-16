@@ -71,11 +71,11 @@ Parsing Rules:
 5. If dishes or items are listed as a package (especially for Foodwebb Catering), extract them into menuDescription.
 6. Only return valid JSON matching the schema without markdown codeblocks or explanation.`;
 
-  // Try gemini-2.5-flash first, fallback to gemini-1.5-flash
-  const models = ['gemini-2.5-flash', 'gemini-1.5-flash'];
-  let lastError: Error | null = null;
+  const candidates = await getCandidateModels(apiKey);
+  let bestError: Error | null = null; // most informative error (non-404)
+  let notFoundError: Error | null = null;
 
-  for (const model of models) {
+  for (const model of candidates) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
       const response = await fetch(url, {
@@ -101,11 +101,18 @@ Parsing Rules:
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        const errMsg = errorData?.error?.message || response.statusText;
-        if (response.status === 400 || response.status === 403 || response.status === 401) {
+        const errMsg: string = errorData?.error?.message || response.statusText;
+        if (isKeyError(response.status, errMsg)) {
           throw new Error(`API_KEY_INVALID: ${errMsg}`);
         }
-        throw new Error(`Gemini error (${model}): ${errMsg}`);
+        if (response.status === 404) {
+          notFoundError = new Error(`Gemini error (${model}): ${errMsg}`);
+          continue; // model retired / unavailable — try next
+        }
+        if (response.status === 429) {
+          throw new Error(`QUOTA: Gemini free-tier limit reached on ${model}. Wait a minute and try again, or use Quick Fill.`);
+        }
+        throw new Error(`Gemini error (${model}, ${response.status}): ${errMsg}`);
       }
 
       const data = await response.json();
@@ -141,14 +148,73 @@ Parsing Rules:
       if (parsed.cautionFee !== undefined) parsed.cautionFee = Number(parsed.cautionFee) || 0;
       if (parsed.handlingFee !== undefined) parsed.handlingFee = Number(parsed.handlingFee) || 0;
 
+      // Remember the model that worked so next time it's tried first
+      try { localStorage.setItem(MODEL_CACHE_KEY, model); } catch { /* ignore */ }
+
       return parsed;
     } catch (err: any) {
-      lastError = err;
       if (err.message?.startsWith('API_KEY_INVALID')) {
         throw err;
       }
+      if (!bestError) bestError = err;
     }
   }
 
-  throw lastError || new Error('Failed to parse with AI');
+  throw bestError || notFoundError || new Error('No Gemini Flash model is available for this API key.');
+};
+
+const MODEL_CACHE_KEY = 'gemini_model';
+const FALLBACK_MODELS = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-lite-latest'];
+
+const isKeyError = (status: number, msg: string): boolean =>
+  status === 401 ||
+  status === 403 ||
+  (status === 400 && /api[\s_-]?key/i.test(msg));
+
+// Rank flash models: "-latest" alias first, then newest version, stable before preview, full before lite
+const rankModel = (name: string): number => {
+  let score = 0;
+  if (/flash-latest$/.test(name)) score += 10_000;
+  const v = name.match(/gemini-(\d+(?:\.\d+)?)/);
+  if (v) score += parseFloat(v[1]) * 1_000;
+  if (/preview|exp/.test(name)) score -= 300;
+  if (/lite/.test(name)) score -= 200;
+  return score;
+};
+
+// Ask Google which models this key can actually use, so retired model names never break the app
+const getCandidateModels = async (apiKey: string): Promise<string[]> => {
+  let cached: string | null = null;
+  try { cached = localStorage.getItem(MODEL_CACHE_KEY); } catch { /* ignore */ }
+
+  let discovered: string[] = [];
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000&key=${encodeURIComponent(apiKey)}`
+    );
+    if (res.ok) {
+      const data = await res.json();
+      discovered = (data?.models || [])
+        .filter((m: any) =>
+          Array.isArray(m.supportedGenerationMethods) &&
+          m.supportedGenerationMethods.includes('generateContent')
+        )
+        .map((m: any) => String(m.name).replace(/^models\//, ''))
+        .filter((n: string) => /flash/i.test(n) && !/image|tts|audio|live|embedding|thinking/i.test(n))
+        .sort((a: string, b: string) => rankModel(b) - rankModel(a));
+    } else {
+      const errData = await res.json().catch(() => null);
+      const msg = errData?.error?.message || res.statusText;
+      if (isKeyError(res.status, msg)) throw new Error(`API_KEY_INVALID: ${msg}`);
+    }
+  } catch (err: any) {
+    if (err.message?.startsWith('API_KEY_INVALID')) throw err;
+    // network issue listing models — fall through to static list
+  }
+
+  const ordered = [
+    ...(cached ? [cached] : []),
+    ...(discovered.length ? discovered : FALLBACK_MODELS),
+  ];
+  return Array.from(new Set(ordered)).slice(0, 6);
 };
